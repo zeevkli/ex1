@@ -273,6 +273,8 @@ PriorityQueueResult pqInsert(PriorityQueue queue, PQElement element, PQElementPr
     {
         return PQ_OUT_OF_MEMORY;
     }
+
+    //create node and check it's not null
     Node node = createNode(elementCopy, elementPriorityCopy);
 
     if (node == NULL)
@@ -290,21 +292,21 @@ PriorityQueueResult pqInsert(PriorityQueue queue, PQElement element, PQElementPr
     }
     else
     {
-        //If the prioriy of the element added is smaller than the priority
+        //If the prioriy of the element added is bigger than the priority
         // of the current first element, make it the first element
-        if(queue->comparePrioritiesFunction(node->elementPriority, current->element) < 0)
+        if(queue->comparePrioritiesFunction(node->elementPriority, current->element) > 0)
         {
             node->next = current;
             queue->list = node;
         }
         else
         {
-            //while the next node is not null and it's priority is smaller or equal to the priority of
+            //while the next node is not null and it's priority is bigger or equal to the priority of
             // the added element, we advance current and next
 
             //!!!need to check about order of insertion and stuff....
             Node next = current->next;
-            while(next && queue->comparePrioritiesFunction(node->elementPriority, next->element) > 0)
+            while(next && queue->comparePrioritiesFunction(node->elementPriority, next->element) <= 0)
             {
                 current = next;
                 next = next->next;
@@ -361,14 +363,14 @@ PriorityQueueResult pqRemoveElement(PriorityQueue queue, PQElement element)
     {
         return PQ_ELEMENT_DOES_NOT_EXISTS;
     }
-    //Nodes which holt the current element found to remove, and the element before it
-    Node beforeRemoveElement = NULL;
-    Node removeElement = NULL;
 
     //The case in which the first element is the element to remove is addressed differently
     if(queue->isEqualElementFunction(element, first))
     {
-        removeElement = first;
+        queue->list = first->next;
+        destroyNode(first);
+        queue->size--;
+        return PQ_SUCCESS;
     }
 
     Node current = first;
@@ -377,42 +379,15 @@ PriorityQueueResult pqRemoveElement(PriorityQueue queue, PQElement element)
     {
         if(queue->isEqualElementFunction(next, element))
         {
-            beforeRemoveElement = current;
-            removeElement = next;
+            current->next = next->next;
+            destroyNode(next);
+            queue->size--;
+            return PQ_SUCCESS;
         }
         current = next;
         next = next->next;
     }
-
-    if (removeElement == first)
-    {
-        //address the case in which first is the only element
-        if(!first->next)
-        {
-            destroyNode(queue, first);
-            queue->list = NULL;
-            return PQ_SUCCESS;
-        }
-        //first is not the only element
-        else
-        {
-            queue->list = first->next;
-            destroyNode(queue, first);
-            return PQ_SUCCESS;
-        }
-    }
-    // the remove element is not null
-    else if(removeElement != NULL)
-    {
-        beforeRemoveElement->next = removeElement->next;
-        destroyNode(queue, first);
-        return PQ_SUCCESS;
-    }
-    // the remove element is null, hence we didn't find an element to remove
-    else
-    {
-        return PQ_ELEMENT_DOES_NOT_EXISTS;
-    }
+    return PQ_ELEMENT_DOES_NOT_EXISTS;
     
 }
 
