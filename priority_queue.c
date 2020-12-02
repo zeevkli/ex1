@@ -93,7 +93,18 @@ static Node copyNode(PriorityQueue queue, Node old)
         return NULL;
     }
     new_node->element = queue->copyElementFunction(old->element);
+	if(new_node->element == NULL)
+	{
+		free(new_node);
+		return NULL;
+	}
     new_node->elementPriority = queue->copyPriorityFunction(old->elementPriority);
+	if(new_node->elementPriority == NULL)
+	{
+		queue->freeElementFunction(new_node->element);
+		free(new_node);
+		return NULL;
+	}
     new_node->next = NULL;
     return new_node;
 }
@@ -217,7 +228,6 @@ PriorityQueue pqCopy(PriorityQueue queue)
     }
     new_queue->size = queue->size;
     new_queue->iteratorCurrentPosition = new_queue->list;
-
     return new_queue;
 }
 
