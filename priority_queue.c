@@ -98,7 +98,7 @@ static Node copyNode(PriorityQueue queue, Node old)
     return new_node;
 }
 
-//returns a pointer to a copy of queu->list
+//returns a pointer to a copy of queue->list
 static Node copyList(PriorityQueue queue)
 {
     if(queue == NULL || queue->list == NULL)
@@ -161,7 +161,6 @@ PriorityQueue pqCreate(CopyPQElement copy_element,
     queue->list = NULL;
     queue->size = 0;
     queue->iteratorCurrentPosition = NULL;
-
     queue->copyElementFunction = copy_element;
     queue->freeElementFunction = free_element;
     queue->isEqualElementFunction = equal_elements;
@@ -173,7 +172,7 @@ static void destroyList(PriorityQueue queue, Node node)
 {
     Node current = node;
     Node tmp;
-    while(current)
+    while(current)//NULL safe
     {
         tmp = current;
         current = current->next;
@@ -185,7 +184,6 @@ void pqDestroy(PriorityQueue queue)
     destroyList(queue, queue->list);
     free(queue);   
 }
-
 
 
 PriorityQueue pqCopy(PriorityQueue queue)
@@ -221,6 +219,19 @@ PriorityQueue pqCopy(PriorityQueue queue)
     new_queue->iteratorCurrentPosition = new_queue->list;
 
     return new_queue;
+}
+
+PriorityQueueResult pqClear(PriorityQueue queue)
+{
+	if(queue == NULL)
+	{
+		return MAP_NULL_ARGUMENT;
+	}
+	destroyList(queue, queue->list);
+	queue->list = NULL;
+    queue->size = 0;
+    queue->iteratorCurrentPosition = NULL;
+	return MAP_SUCCESS;
 }
 
 int pqGetSize(PriorityQueue queue)
@@ -418,6 +429,8 @@ PriorityQueueResult pqRemove(PriorityQueue queue)
     
 }
 
-PQElement pqGetFirst(PriorityQueue queue)
+
+
+//PQElement pqGetFirst(PriorityQueue queue)
 
 
