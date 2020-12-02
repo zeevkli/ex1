@@ -235,13 +235,13 @@ PriorityQueueResult pqClear(PriorityQueue queue)
 {
 	if(queue == NULL)
 	{
-		return MAP_NULL_ARGUMENT;
+		return PQ_NULL_ARGUMENT;
 	}
 	destroyList(queue, queue->list);
 	queue->list = NULL;
     queue->size = 0;
     queue->iteratorCurrentPosition = NULL;
-	return MAP_SUCCESS;
+	return PQ_SUCCESS; 
 }
 
 int pqGetSize(PriorityQueue queue)
@@ -431,16 +431,47 @@ PriorityQueueResult pqChangePriority(PriorityQueue queue, PQElement element,
 
 PriorityQueueResult pqRemove(PriorityQueue queue)
 {
-    //!!!!! what should we return if the queue is empty?
     if (!queue)
     {
         return PQ_NULL_ARGUMENT;
     }
-    
+	if(queue->list == NULL)
+	{
+		assert(queue->size == 0);
+		return PQ_SUCCESS;//!!!!! what should we return if the queue is empty? 
+	}
+	Node tmp = queue->list;
+	queue->list = queue->list->next;
+	if(queue->iteratorCurrentPosition == tmp)
+	{
+		queue->iteratorCurrentPosition = NULL;
+	}
+	destroyNode(tmp);
+	queue->size--;
+	return PQ_SUCCESS;
 }
 
+PQElement pqGetFirst(PriorityQueue queue)
+{
+	if(queue == NULL || queue->size == 0)
+	{
+		return NULL;
+	}
+	queue->iteratorCurrentPosition = queue->list;
+	return queue->iteratorCurrentPosition->element;
+}
 
-
-//PQElement pqGetFirst(PriorityQueue queue)
-
+PQElement pqGetNext(PriorityQueue queue)
+{
+	 if(queue == NULL || queue->size == 0)
+	{
+		return NULL;
+	}
+	queue->iteratorCurrentPosition = queue->iteratorCurrentPosition->next;
+	if(queue->iteratorCurrentPosition == NULL)
+	{
+		return NULL;
+	}
+	return queue->iteratorCurrentPosition->element;
+}
 
