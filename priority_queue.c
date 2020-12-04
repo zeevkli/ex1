@@ -1,17 +1,12 @@
 #include <stdlib.h>
 #include <assert.h>
 
-
 #include "priority_queue.h"
-
-
-
-
 
 typedef struct ListNode
 {
-   PQElement *element;
-   PQElementPriority *elementPriority;
+   PQElement element;
+   PQElementPriority elementPriority;
    struct ListNode* next;
 }*Node;
 
@@ -45,8 +40,8 @@ static Node createNode(PQElement element, PQElementPriority elementPriority)
     {
         return NULL;
     }
-    node->element = &element;
-    node->elementPriority = &elementPriority;
+    node->element = element;
+    node->elementPriority = elementPriority;
     node->next = NULL;
     return node;
 }
