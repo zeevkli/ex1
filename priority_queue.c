@@ -1,15 +1,12 @@
 #include <stdlib.h>
 #include <assert.h>
-
 #include "priority_queue.h"
-
 typedef struct ListNode
 {
    PQElement element;
    PQElementPriority elementPriority;
    struct ListNode* next;
 }*Node;
-
 
 typedef struct PriorityQueue_t
 {
@@ -27,7 +24,6 @@ typedef struct PriorityQueue_t
 }PQ;
 
 static Node createNode(PQElement element, PQElementPriority elementPriority);
-// static bool nodeValuesEqual(PriorityQueue queue, Node first, Node second);
 static void destroyNode(PriorityQueue queue, Node node);
 static Node copyNode(PriorityQueue queue, Node old);
 static Node copyList(PriorityQueue queue);
@@ -53,13 +49,6 @@ static void destroyNode(PriorityQueue queue, Node node)
     queue->freeElementPriority(node->elementPriority);
     free(node);
 }
-
-
-// static bool nodeValuesEqual(PriorityQueue queue, Node first, Node second)
-// {
-//     return queue->isEqualElementFunction(first->element, second->element) &&
-//      queue->comparePrioritiesFunction(first->elementPriority, second->elementPriority) == 0;
-// }
 
 static Node copyNode(PriorityQueue queue, Node old)
 {
@@ -114,11 +103,6 @@ static Node copyList(PriorityQueue queue)
     }
     return new_list;
 }
-
-
-
-
-
 PriorityQueue pqCreate(CopyPQElement copy_element,
                        FreePQElement free_element,
                        EqualPQElements equal_elements,
@@ -140,7 +124,6 @@ PriorityQueue pqCreate(CopyPQElement copy_element,
     queue->copyPriorityFunction = copy_priority;
     queue->freeElementPriority = free_priority;
     queue->comparePrioritiesFunction = compare_priorities;
-    
     return queue;
 }
 static void destroyList(PriorityQueue queue, Node node)
@@ -159,8 +142,6 @@ void pqDestroy(PriorityQueue queue)
     destroyList(queue, queue->list);
     free(queue);   
 }
-
-
 PriorityQueue pqCopy(PriorityQueue queue)
 {
     if(queue == NULL)
@@ -277,7 +258,6 @@ PriorityQueueResult pqInsert(PriorityQueue queue, PQElement element, PQElementPr
 	return PQ_SUCCESS;
 }
 	
-
 bool pqContains(PriorityQueue queue, PQElement element)
 {
     if(!queue || !element)
@@ -294,7 +274,6 @@ bool pqContains(PriorityQueue queue, PQElement element)
             return true;
         }
     }
-    
     return false;
 }
 
@@ -372,10 +351,10 @@ PriorityQueueResult pqChangePriority(PriorityQueue queue, PQElement element,
             {
                 current->next = next->next;
                 destroyNode(queue, next);
+				queue->size--;
                 return pqInsert(queue, element, new_priority);
             }
         }
-
         return PQ_ELEMENT_DOES_NOT_EXISTS;
     }
 
