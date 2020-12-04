@@ -214,8 +214,6 @@ int pqGetSize(PriorityQueue queue)
     return queue->size;
 }
 
-
-//needs to be changed so it keeps the queue ordered
 PriorityQueueResult pqInsert(PriorityQueue queue, PQElement element, PQElementPriority priority)
 {
     //Check arguments are not null
@@ -245,55 +243,40 @@ PriorityQueueResult pqInsert(PriorityQueue queue, PQElement element, PQElementPr
     {
         return PQ_OUT_OF_MEMORY;
     }
-
-    //Find the node that our node needs to be inserted after
+	//Find the node that our node needs to be inserted after
     Node current = queue->list;
     
-    //the list is empty
+	//the list is empty
     if (!current)
     {
         queue->list = node;
+		queue->size++;
+		return PQ_SUCCESS;
     }
-    else
-    {
-        //If the prioriy of the element added is bigger than the priority
-        // of the current first element, make it the first element
-        if(queue->comparePrioritiesFunction(node->elementPriority, current->element) > 0)
-        {
-            node->next = current;
-            queue->list = node;
-        }
-        else
-        {
-            //while the next node is not null and it's priority is bigger or equal to the priority of
-            // the added element, we advance current and next
-
-            //!!!need to check about order of insertion and stuff....
-            Node next = current->next;
-            while(next && queue->comparePrioritiesFunction(node->elementPriority, next->element) <= 0)
-            {
-                current = next;
-                next = next->next;
-            }
-            //if next is null, we want to add the element to the end of the list
-            if(!next)
-            {
-                current->next = node;
-            }
-            //else, we add the node after current and before next
-            else
-            {
-                current->next = node;
-                node->next = next;
-            }
-
-        }
-        
-    }
-
-    queue->size++;
-    return PQ_SUCCESS;
+	
+	//compare with current
+	if(queue->comparePrioritiesFunction(node->elementPriority,current->elementPriority) > 0)
+	{
+		assert(current);
+		node->next = current;
+		queue->list = node;
+		queue->size++;
+		return PQ_SUCCESS;
+	}
+	
+	//traverse list until current->next has LOWER priority than "node" 
+	while(current->next != NULL && 
+	queue->comparePrioritiesFunction(node->elementPriority,current->next->elementPriority) <= 0)
+	{
+		current = current->next;
+	}
+	node->next = current->next;  
+	current->next = node;
+	assert(node->next != current->next);
+	queue->size++;
+	return PQ_SUCCESS;
 }
+	
 
 bool pqContains(PriorityQueue queue, PQElement element)
 {
