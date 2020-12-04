@@ -362,6 +362,7 @@ PriorityQueueResult pqChangePriority(PriorityQueue queue, PQElement element,
             else
             {
                 destroyNode(queue, first);
+                queue->size--;
                 return ret;
             }
         }
@@ -382,6 +383,7 @@ PriorityQueueResult pqChangePriority(PriorityQueue queue, PQElement element,
             else
             {
                 destroyNode(queue, next);
+                queue->size--;
                 return ret;
             }
         }

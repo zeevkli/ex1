@@ -1,5 +1,6 @@
 #include "test_utilities.h"
 #include "../priority_queue.h"
+#include <assert.h>
 #include <stdlib.h>
 #define NUMBER_TESTS 10
 static void freeCharGeneric(PQElementPriority c)
@@ -208,6 +209,7 @@ static void printList(PriorityQueue pq)
 		printf("VALUE %d: %d\n",i, *iter);
 		i++;
 	}
+	assert(i == pqGetSize(pq));
 	printf("-------------------------\n");
 }
 bool newTest() {
@@ -356,7 +358,8 @@ int main(int argc, char *argv[]) {
     }
 
     RUN_TEST(tests[test_idx - 1], testNames[test_idx - 1]);
-	
 
+
+    system("pause");
     return 0;
 }
