@@ -4,15 +4,16 @@
 
 #include "priority_queue.h"
 
-static Node findNode(PriorityQueue queue, PQElement element, PQElementPriority elementPriority);
-static Node createNode(PQElement element, PQElementPriority elementPriority);
-static void setNextNode(Node before, Node after);
-static Node lastNode(PriorityQueue queue);
-static bool nodeValuesEqual(PriorityQueue queue, Node first, Node second);
-static void destroyNode(PriorityQueue queue, Node node);
-static Node copyNode(PriorityQueue queue, Node old);
-static Node copyList(PriorityQueue queue);
-static void destroyList(PriorityQueue queue, Node node);
+
+
+
+
+typedef struct ListNode
+{
+   PQElement *element;
+   PQElementPriority *elementPriority;
+   struct ListNode* next;
+}*Node;
 
 
 typedef struct PriorityQueue_t
@@ -30,32 +31,12 @@ typedef struct PriorityQueue_t
     ComparePQElementPriorities comparePrioritiesFunction;
 }PQ;
 
-typedef struct ListNode
-{
-   PQElement *element;
-   PQElementPriority *elementPriority;
-   struct ListNode* next;
-}*Node;
-
-
-
-static Node findNode(PriorityQueue queue, PQElement element, PQElementPriority elementPriority)
-{
-    if(!queue || !element || !elementPriority || !queue->list)
-    {
-        return NULL;
-    }
-    Node node = queue->list;
-    while(node)
-    {
-        if(queue->isEqualElementFunction(node->element, element)
-        && queue->comparePrioritiesFunction(node->elementPriority, elementPriority))
-        {
-            return true;
-        }
-    }
-    return false;
-}
+static Node createNode(PQElement element, PQElementPriority elementPriority);
+// static bool nodeValuesEqual(PriorityQueue queue, Node first, Node second);
+static void destroyNode(PriorityQueue queue, Node node);
+static Node copyNode(PriorityQueue queue, Node old);
+static Node copyList(PriorityQueue queue);
+static void destroyList(PriorityQueue queue, Node node);
 
 static Node createNode(PQElement element, PQElementPriority elementPriority)
 {
@@ -79,11 +60,11 @@ static void destroyNode(PriorityQueue queue, Node node)
 }
 
 
-static bool nodeValuesEqual(PriorityQueue queue, Node first, Node second)
-{
-    return queue->isEqualElementFunction(first->element, second->element) &&
-     queue->comparePrioritiesFunction(first->elementPriority, second->elementPriority) == 0;
-}
+// static bool nodeValuesEqual(PriorityQueue queue, Node first, Node second)
+// {
+//     return queue->isEqualElementFunction(first->element, second->element) &&
+//      queue->comparePrioritiesFunction(first->elementPriority, second->elementPriority) == 0;
+// }
 
 static Node copyNode(PriorityQueue queue, Node old)
 {
@@ -141,20 +122,6 @@ static Node copyList(PriorityQueue queue)
 
 
 
-static Node lastNode(PriorityQueue queue)
-{
-    Node node = queue->list;
-
-    if(!node)
-        return NULL;
-
-    while(node->next!=NULL)
-    {
-        node = node->next;
-    }
-
-    return node;
-}
 
 
 PriorityQueue pqCreate(CopyPQElement copy_element,
@@ -178,6 +145,8 @@ PriorityQueue pqCreate(CopyPQElement copy_element,
     queue->copyPriorityFunction = copy_priority;
     queue->freeElementPriority = free_priority;
     queue->comparePrioritiesFunction = compare_priorities;
+    
+    return queue;
 }
 static void destroyList(PriorityQueue queue, Node node)
 {
@@ -207,7 +176,7 @@ PriorityQueue pqCopy(PriorityQueue queue)
             queue->freeElementFunction,
             queue->isEqualElementFunction,
             queue->copyPriorityFunction,
-            queue->copyPriorityFunction,
+            queue->freeElementPriority,
             queue->comparePrioritiesFunction);
     if(new_queue == NULL)
     {
@@ -327,6 +296,7 @@ PriorityQueueResult pqInsert(PriorityQueue queue, PQElement element, PQElementPr
         
     }
 
+    queue->size++;
     return PQ_SUCCESS;
 }
 
