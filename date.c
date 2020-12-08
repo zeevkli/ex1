@@ -20,7 +20,7 @@ Date dateCreate(int day, int month, int year)
 	{
 		return NULL;
 	}
-	Date date = (Date) malloc(sizeof(date));
+	Date date = (Date) malloc(sizeof(*date));
 	if(!date)
 	{
 		return NULL;
@@ -83,15 +83,18 @@ int dateCompare(Date date1, Date date2)
     {
         return 0;
     }
-    if(date1->year < date2->year || date1->month < date2->month || date1->day < date2->day)
-    {
-        return -1;
-    }
-    if(date1->year == date2->year && date1->month == date2->month && date1->day == date2->day)
-    {
-        return 0;
-    }
-    return 1;
+	int yearDelta = date1->year - date2->year;
+	int monthDelta = date1->month - date2->month;
+	int dayDelta = date1->day - date2->day;
+	if(yearDelta != 0)
+	{
+		return yearDelta;
+	}
+	if(monthDelta != 0)
+	{
+		return monthDelta;
+	}
+    return dayDelta;
 }
 
 void dateTick(Date date)
