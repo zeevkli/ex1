@@ -240,6 +240,27 @@ void destroyEventManager(EventManager em)
 	}
 	dateDestroy(em->currentDate);
 	pqDestroy(em->events);
+    //change according to implemintation of members list
 	pqDestroy(em->members);
+}
+
+
+EventManagerResult emAddEventByDate(EventManager em, char* event_name, Date date, int event_id)
+{
+    if(!em || !event_name || !date)
+    {
+        return EM_NULL_ARGUMENT;
+    }
+    if(dateCompare(date, em->currentDate) > 0)
+    {
+        return EM_INVALID_DATE;
+    }
+    if(event_id < 0)
+    {
+        return EM_INVALID_EVENT_ID;
+    }
+
+    Event event = (Event) malloc(sizeof(*event));
+    
 }
 
