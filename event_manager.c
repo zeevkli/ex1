@@ -6,19 +6,14 @@
 #include "date.h"
 #include "priority_queue.h"
 
-
+typedef enum {MEMBER_ADD_EVENT, MEMBER_REMOVE_EVENT} memberEnum;
 typedef struct Member_t
 {
     int id;
     char *name;
+	int events_number; //matters only in members pq
 }*Member;
-/**
-typedef struct MemberList_t 
-{
-    Member member;
-    struct MemberList_t *next;
-}*MemberNode;
-**/
+
 typedef struct Event_t
 {
     Date date;
@@ -31,7 +26,7 @@ struct EventManager_t
 {
     Date currentDate;
     PriorityQueue events;
-	PriorityQueue members;//!!! change member functions below
+	PriorityQueue members;
 };
 
 static PQElementPriority copyIdGeneric(PQElementPriority n);
@@ -161,6 +156,19 @@ static bool eventsEqual(PQElement event1, PQElement event2)
     return newEvent1->id == newEvent2->id;
 }
 
+static int compareMemberPriority(PQElement memberA, PQElement memberB)
+{
+    Member member1 = (Member) memberA;
+    Member member2 = (Member) memberB;
+    int eventsDelta = member1->events_number - member2->events_number;
+    if(!eventsDelta)
+    {
+        return eventsDelta;
+    }
+    return member1->id - member2->id;
+}
+
+
 static Member memberCreate(int id, char *name)
 {
     if(!name)
@@ -179,9 +187,9 @@ static Member memberCreate(int id, char *name)
         return NULL;
     }
     strcpy(member->name, name);
+	member->events_number = 0;
     return (PQElement) member;
 }
-
 
 static PQElement memberCopy(PQElement member)
 {
@@ -218,7 +226,6 @@ static void memberFree(PQElement member)
     free(memberNew);
 }
 
-
 EventManager createEventManager(Date date)
 {
     if(!date)
@@ -231,22 +238,26 @@ EventManager createEventManager(Date date)
     {
         return NULL;
     }
-
     em->currentDate = dateCopy(date);
     if(!em->currentDate)
     {
-        free(em);
+        destroyEventManager(em);
         return NULL;
     }
     em->events = pqCreate(eventCopy, eventDestroy, eventsEqual,
 						dateCopy, dateDestroy, dateCompare);
     if(!em->events)
     {
-        dateDestroy(em->currentDate);
-        free(em);
+        destroyEventManager(em);
         return NULL;
     }
-    em->members = NULL;
+    em->members = pqCreate(memberCopy, memberFree, membersEqual,
+							memberCopy, memberFree, compareMemberPriority);
+	if(!em->members)
+	{
+		destroyEventManager(em);
+		return NULL;
+	}
     return em;
 }
 void destroyEventManager(EventManager em)
@@ -257,54 +268,9 @@ void destroyEventManager(EventManager em)
 	}
 	dateDestroy(em->currentDate);
 	pqDestroy(em->events);
-	emDestroyMembers(em);
+	pqDestroy(em->members);
 }
-static Member emGetMember(EventManager em, int id)
-{
-    assert(id >= 0);
-    MemberNode current = em->members;
-    while(current)
-    {
-        if(current->member->id == id)
-        {
-            return current->member;
-        }
-        current = current->next;
-    }
-    return NULL;
-}
-static void emDestroyMembers(EventManager em)
-{
-    if(!em)
-    {
-        return;
-    }
-    MemberNode tmp =  NULL;
-    while(em->members)
-    {
-        tmp =  em->members;
-        em->members = em->members->next;
-        memberFree(tmp->member);
-        tmp->next = NULL;
-    }
-}
-static bool emMemberExists(EventManager em, int id)//can probaby be replaced with emGetMember
-{
-    if(!em)
-    {
-        return false;
-    }
-    MemberNode current = em->members;
-    while(current)
-    {
-        if(current->member->id == id)
-        {
-            return true;
-        }
-        current = current->next;
-    }
-    return false;
-}
+
 EventManagerResult emAddMember(EventManager em, char* member_name, int member_id)
 {
     if(!em || !member_name)
@@ -315,25 +281,56 @@ EventManagerResult emAddMember(EventManager em, char* member_name, int member_id
     {
         return EM_INVALID_MEMBER_ID;
     }
-    if(emMemberExists(em, member_id))
-    {
-        return EM_MEMBER_ID_ALREADY_EXISTS;
-    }
-    Member new_member = memberCreate(member_id, member_name);
+	Member new_member = memberCreate(member_id, member_name);
     if(!new_member)
     {
         return EM_OUT_OF_MEMORY;
     }
-    MemberNode new_node = malloc(sizeof(*new_node));
-    if(!new_node)
+	
+    if(pqContains(em->members, new_member))
     {
-        memberFree(new_member);
-        return EM_OUT_OF_MEMORY;
+		memberFree(new_member);
+        return EM_MEMBER_ID_ALREADY_EXISTS;
     }
-    new_node->member = new_member;
-    new_node->next = em->members;
-    em->members = new_node;
+    PriorityQueueResult pqResult = pqInsert(em->members, new_member, new_member);
+	if(pqResult == PQ_OUT_OF_MEMORY)
+	{
+		memberFree(new_member);
+		return EM_OUT_OF_MEMORY;
+	}
+	assert(pqResult == PQ_SUCCESS);
+	memberFree(new_member);
     return EM_SUCCESS;
+}
+EventManagerResult emMemberChangePrioriy(EventManager em, int member_id, memberEnum add_or_remove)
+{
+	Member member = NULL;	
+	EventManagerResult result = emFindMember(em, member_id, &member);
+	assert(member->id == member_id);
+    int new_number;
+	switch(add_or_remove)
+	{
+		case MEMBER_ADD_EVENT:
+			new_number = member->events_number + 1;
+		case MEMBER_REMOVE_EVENT:
+			new_number = member->events_number - 1;
+		default:
+			assert(1 == 0);// I probably fucked up using the enum
+	};
+	Member new_member = memberCopy(member);
+	if(!new_member)
+	{
+		return EM_OUT_OF_MEMORY;
+	}
+	new_member->events_number = new_number;
+	assert(new_number >= 0);
+	PriorityQueueResult result = pqChangePriority(em->members, new_member, member, new_member);
+	if(result == PQ_NULL_ARGUMENT)
+	{
+		return EM_NULL_ARGUMENT;
+	}
+	assert(result == PQ_SUCCESS);
+	return EM_SUCCESS;
 }
 EventManagerResult emAddMemberToEvent(EventManager em, int member_id, int event_id)
 {
@@ -359,17 +356,82 @@ EventManagerResult emAddMemberToEvent(EventManager em, int member_id, int event_
     {
         return EM_EVENT_ID_NOT_EXISTS;
     }
-    Member member = emGetMember(em, member_id);
-    if(!member)
+	assert(result == EM_SUCCESS);
+	
+    Member member = NULL;
+	result = emFindMember(em, member_id, &member);
+    if(result == EM_MEMBER_ID_NOT_EXISTS)
     {
         return EM_MEMBER_ID_NOT_EXISTS;
     }
+	assert(result == EM_SUCCESS);
+	
     if(pqContains(event->memberPQ, member))
     {
         return EM_EVENT_AND_MEMBER_ALREADY_LINKED;
     }
-    pqInsert(event->memberPQ, member, &member->id);
-    return EM_SUCCESS;
+	
+	PriorityQueueResult pqResult = pqInsert(event->memberPQ, member, &member->id);
+    if(pqResult == PQ_OUT_OF_MEMORY)
+	{
+		return EM_OUT_OF_MEMORY;
+	}
+	assert(pqResult == PQ_SUCCESS);
+	result = emMemberChangePrioriy(em, member_id, MEMBER_ADD_EVENT);
+	if(result == EM_OUT_OF_MEMORY)
+    {
+        return EM_OUT_OF_MEMORY;
+    }
+	assert(result == EM_SUCCESS);
+	return EM_SUCCESS;
+}
+
+EventManagerResult emRemoveMemberFromEvent(EventManager em, int member_id, int event_id)
+{
+    if(!em)
+    {
+        return EM_NULL_ARGUMENT;
+    }
+    if(member_id<0)
+    {
+        return EM_INVALID_MEMBER_ID;
+    }
+    if(event_id <0)
+    {
+        return EM_INVALID_EVENT_ID;
+    }  
+    Event event = NULL;
+    EventManagerResult result = emFindEvent(em, event_id, &event);
+    if(result == EM_OUT_OF_MEMORY)
+    {
+        return EM_OUT_OF_MEMORY;
+    }
+    if(result == EM_EVENT_ID_NOT_EXISTS)
+    {
+        return EM_EVENT_ID_NOT_EXISTS;
+    }
+	assert(result == EM_SUCCESS);
+    Member member = NULL;
+	result = emFindMember(em, member_id, &member);
+    if(result == EM_MEMBER_ID_NOT_EXISTS)
+    {
+        return EM_MEMBER_ID_NOT_EXISTS;
+    }
+	assert(result == EM_SUCCESS);
+	
+    if(!pqContains(event->memberPQ, member))
+    {
+        return EM_EVENT_AND_MEMBER_NOT_LINKED;
+    }
+	PriorityQueueResult pqResult = pqRemoveElement(event->memberPQ, member);
+	assert(pqResult == PQ_SUCCESS);
+	result = emMemberChangePrioriy(em, member_id, MEMBER_REMOVE_EVENT);
+	if(result == EM_OUT_OF_MEMORY)
+    {
+        return EM_OUT_OF_MEMORY;
+    }
+	assert(result == EM_SUCCESS);
+	return EM_SUCCESS;
 }
 static bool eventNameAlreadyExistsInDate(EventManager em, Event event)
 {
@@ -382,7 +444,6 @@ static bool eventNameAlreadyExistsInDate(EventManager em, Event event)
     }
     return false;
 }
-
 
 static EventManagerResult eventAdd(EventManager em, Event event, Date date)
 {
@@ -530,6 +591,24 @@ static EventManagerResult emFindEvent(EventManager em, int id, Event *event_p)
     eventDestroy(blankEvent);
     return EM_EVENT_ID_NOT_EXISTS;
 }
+
+static EventManagerResult emFindMember(EventManager em, int id, Member *member_p)
+{
+    if(!em)
+    {
+        return EM_NULL_ARGUMENT;
+    }
+    PQ_FOREACH(Member, iterator, em->members)
+    {
+        if(id == iterator->id)
+        {
+            *member_p = &iterator;
+            return EM_SUCCESS;
+        }
+    }
+    return EM_MEMBER_ID_NOT_EXISTS;
+}
+
 EventManagerResult emChangeEventDate(EventManager em, int event_id, Date new_date)
 {
     if(!em || !new_date)
@@ -635,9 +714,43 @@ char* emGetNextEvent(EventManager em)
     {
         return NULL;
     }
-    return next->name;
+    char *name = (char *) malloc(strlen(next->name) + 1);
+    strcpy(name, next->name);
+    return name;
 }
 
 
+void emPrintAllResponsibleMembers(EventManager em, const char* file_name)
+{
+    PQ_FOREACH(Member, iterator, em->members)
+    {
+        fprintf(file_name, "%s, %d/n",iterator->name, iterator->events_number);
+    }
+}
+void emPrintAllEvents(EventManager em, const char* file_name)
+{
+    
+}
 
+static void emPrintEvent(Event event, const char* file_name)
+{
+    fprintf(file_name, "%s,", event->name);
+    printDate(event->date, file_name);
+    printEventMemberPq()
+}
 
+static void printDate(Date date, const char* file_name)
+{
+    int day, month, year;
+    dateGet(date, &day, &month, &year);
+    fprintf(file_name, "%d.%d.%d,", day, month, year);
+}
+
+static void printEventMemberPq(PriorityQueue members, const char* file_name)
+{
+    PQ_FOREACH(Member, iteratorMember, members)
+    {
+        fprintf(file_name, "%s", iteratorMember->name);
+        
+    }
+}
