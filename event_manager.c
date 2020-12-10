@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "event_manager.h"
 #include "date.h"
@@ -47,6 +48,14 @@ static bool eventsEqual(PQElement event1, PQElement event2);
 static bool eventNameAlreadyExistsInDate(EventManager em, Event event);
 static EventManagerResult eventAdd(EventManager em, Event event, Date date);
 static EventManagerResult emFindEvent(EventManager em, int id, Event *event_p);
+static EventManagerResult emFindMember(EventManager em, int id, Member *member_p);
+
+static EventManagerResult emMemberChangePrioriy(EventManager em, int member_id, memberEnum add_or_remove);
+static int compareMemberPriority(PQElement memberA, PQElement memberB);
+
+static void emPrintEvent(Event event, FILE* stream);
+static void printDate(Date date, FILE* stream);
+static void printEventMemberPq(PriorityQueue members, FILE* stream);
 
 static PQElementPriority copyIdGeneric(PQElementPriority n) {
     if (!n) {
@@ -201,7 +210,7 @@ static PQElement memberCopy(PQElement member)
     if(!memberNew->name){
         return NULL;
     }
-    return createMember(memberNew->id, memberNew->name);
+    return (PQElement) memberCreate(memberNew->id, memberNew->name);
 }
 
 static bool membersEqual(PQElement member1, PQElement member2)
@@ -245,7 +254,9 @@ EventManager createEventManager(Date date)
         return NULL;
     }
     em->events = pqCreate(eventCopy, eventDestroy, eventsEqual,
-						dateCopy, dateDestroy, dateCompare);
+						(PQElementPriority (*)(PQElementPriority)) dateCopy, 
+                        (void (*) (PQElementPriority)) dateDestroy,
+                        (int (*) (PQElementPriority, PQElementPriority)) dateCompare);
     if(!em->events)
     {
         destroyEventManager(em);
@@ -302,10 +313,12 @@ EventManagerResult emAddMember(EventManager em, char* member_name, int member_id
 	memberFree(new_member);
     return EM_SUCCESS;
 }
-EventManagerResult emMemberChangePrioriy(EventManager em, int member_id, memberEnum add_or_remove)
+
+static EventManagerResult emMemberChangePrioriy(EventManager em, int member_id, memberEnum add_or_remove)
 {
 	Member member = NULL;	
 	EventManagerResult result = emFindMember(em, member_id, &member);
+    assert(result == EM_SUCCESS);
 	assert(member->id == member_id);
     int new_number;
 	switch(add_or_remove)
@@ -317,19 +330,19 @@ EventManagerResult emMemberChangePrioriy(EventManager em, int member_id, memberE
 		default:
 			assert(1 == 0);// I probably fucked up using the enum
 	};
-	Member new_member = memberCopy(member);
+	Member new_member = (Member) memberCopy(member);
 	if(!new_member)
 	{
 		return EM_OUT_OF_MEMORY;
 	}
 	new_member->events_number = new_number;
 	assert(new_number >= 0);
-	PriorityQueueResult result = pqChangePriority(em->members, new_member, member, new_member);
-	if(result == PQ_NULL_ARGUMENT)
+	PriorityQueueResult pqResult = pqChangePriority(em->members, new_member, member, new_member);
+	if(pqResult == PQ_NULL_ARGUMENT)
 	{
 		return EM_NULL_ARGUMENT;
 	}
-	assert(result == PQ_SUCCESS);
+	assert(pqResult == PQ_SUCCESS);
 	return EM_SUCCESS;
 }
 EventManagerResult emAddMemberToEvent(EventManager em, int member_id, int event_id)
@@ -457,15 +470,17 @@ static EventManagerResult eventAdd(EventManager em, Event event, Date date)
         return EM_EVENT_ALREADY_EXISTS;
     }
 
-    PriorityQueueResult pqResult = pqInsert(em, event, date);
+    PriorityQueueResult pqResult = pqInsert(em->events, event, date);
     //arguments cant be null because we already checked them
     assert(pqResult != PQ_NULL_ARGUMENT);
     switch(pqResult)
     {
         case PQ_OUT_OF_MEMORY:
             return EM_OUT_OF_MEMORY;
-        default:
+        case PQ_SUCCESS:
             return EM_SUCCESS;
+        default:
+            return EM_ERROR;
     }
 }
 
@@ -491,13 +506,12 @@ EventManagerResult emAddEventByDate(EventManager em, char* event_name, Date date
         return EM_OUT_OF_MEMORY;
     }
 
-    EventManagerResult emResult = eventAdd(em->events, event, date); 
+    EventManagerResult emResult = eventAdd(em, event, date); 
     eventDestroy(event);
     return emResult;
 }
 
-EventManagerResult emAddEventByDiff(EventManager em, char* event_name, int days,
-int event_id)
+EventManagerResult emAddEventByDiff(EventManager em, char* event_name, int days, int event_id)
 {
     if(!em || !event_name)
     {
@@ -530,7 +544,7 @@ int event_id)
         return EM_OUT_OF_MEMORY;
     }
     
-    EventManagerResult emResult = eventAdd(em->events, event, newDate);
+    EventManagerResult emResult = eventAdd(em, event, newDate);
     dateDestroy(newDate);
     eventDestroy(event);
     return emResult;
@@ -561,8 +575,10 @@ EventManagerResult emRemoveEvent(EventManager em, int event_id)
     {
         case PQ_ELEMENT_DOES_NOT_EXISTS:
             return EM_EVENT_NOT_EXISTS;
-        default:
+        case PQ_SUCCESS:
             return EM_SUCCESS;
+        default:
+            return EM_ERROR;
 
     }
 }
@@ -584,7 +600,7 @@ static EventManagerResult emFindEvent(EventManager em, int id, Event *event_p)
         if(eventsEqual(iteratorEvent, blankEvent))
         {
             eventDestroy(blankEvent);
-            *event_p = &iteratorEvent;
+            *event_p = iteratorEvent;
             return EM_SUCCESS;
         }
     }
@@ -602,7 +618,7 @@ static EventManagerResult emFindMember(EventManager em, int id, Member *member_p
     {
         if(id == iterator->id)
         {
-            *member_p = &iterator;
+            *member_p = iterator;
             return EM_SUCCESS;
         }
     }
@@ -623,7 +639,7 @@ EventManagerResult emChangeEventDate(EventManager em, int event_id, Date new_dat
     {
         return EM_INVALID_EVENT_ID;
     }
-    Event *eventToChange;
+    Event *eventToChange = NULL;
     EventManagerResult emResult = emFindEvent(em, event_id, eventToChange);
     
     //args can't be null
@@ -662,10 +678,14 @@ EventManagerResult emChangeEventDate(EventManager em, int event_id, Date new_dat
                     return EM_OUT_OF_MEMORY;
                 case PQ_SUCCESS:
                     return EM_SUCCESS;
+                default:
+                    return EM_ERROR;
             }
             
         case EM_EVENT_ID_NOT_EXISTS:
             return EM_EVENT_ID_NOT_EXISTS;
+        default:
+            return EM_ERROR;
     }
 }
 
@@ -684,7 +704,7 @@ EventManagerResult emTick(EventManager em, int days)
     {
         dateTick(em->currentDate);
         Event first = (Event) pqGetFirst(em->events);
-        while(first && dateCompate(first, em->currentDate) < 0)
+        while(first && dateCompare(first->date, em->currentDate) < 0)
         {
             PriorityQueueResult pqResult = pqRemove(em->events);
             assert(pqResult != PQ_NULL_ARGUMENT);
@@ -722,35 +742,52 @@ char* emGetNextEvent(EventManager em)
 
 void emPrintAllResponsibleMembers(EventManager em, const char* file_name)
 {
+    FILE* stream = fopen(file_name, "r");
     PQ_FOREACH(Member, iterator, em->members)
     {
-        fprintf(file_name, "%s, %d/n",iterator->name, iterator->events_number);
+        fprintf(stream, "%s,%d/n", iterator->name, iterator->events_number);
     }
 }
 void emPrintAllEvents(EventManager em, const char* file_name)
 {
-    
+    FILE* stream = fopen(file_name, "r");
+    if(!stream)
+    {
+        return;
+    }
+    PQ_FOREACH(Event, iteratorEvent, em->events)
+    {
+        emPrintEvent(iteratorEvent, stream);
+    }
+    fclose(stream);
 }
 
-static void emPrintEvent(Event event, const char* file_name)
+static void emPrintEvent(Event event, FILE* stream)
 {
-    fprintf(file_name, "%s,", event->name);
-    printDate(event->date, file_name);
-    printEventMemberPq()
+    fprintf(stream, "%s,", event->name);
+    printDate(event->date, stream);
+    printEventMemberPq(event->memberPQ, stream);
+    fprintf(stream, "\n");
 }
 
-static void printDate(Date date, const char* file_name)
+static void printDate(Date date, FILE* stream)
 {
     int day, month, year;
     dateGet(date, &day, &month, &year);
-    fprintf(file_name, "%d.%d.%d,", day, month, year);
+    fprintf(stream, "%d.%d.%d,", day, month, year);
 }
 
-static void printEventMemberPq(PriorityQueue members, const char* file_name)
+static void printEventMemberPq(PriorityQueue members, FILE* stream)
 {
+    int size = pqGetSize(members);
+    int memberCounter = 0;
     PQ_FOREACH(Member, iteratorMember, members)
     {
-        fprintf(file_name, "%s", iteratorMember->name);
-        
+        memberCounter++;
+        fprintf(stream, "%s", iteratorMember->name);
+        if(memberCounter != size)
+        {
+            fprintf(stream, ",");
+        }
     }
 }
