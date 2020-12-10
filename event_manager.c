@@ -604,12 +604,12 @@ EventManagerResult emTick(EventManager em, int days)
     for(int i = 0; i < days; i++)
     {
         dateTick(em->currentDate);
-        Event first = pqGetFirst(em->events);
+        Event first = (Event) pqGetFirst(em->events);
         while(first && dateCompate(first, em->currentDate) < 0)
         {
             PriorityQueueResult pqResult = pqRemove(em->events);
             assert(pqResult != PQ_NULL_ARGUMENT);
-            first = pqGetFirst(em->events);
+            first = (Event) pqGetFirst(em->events);
         }
     }
     return EM_SUCCESS;
