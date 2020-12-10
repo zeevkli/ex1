@@ -113,6 +113,7 @@ static Event createBlankEvent(int id)
     event->memberPQ = NULL;
     event->date = NULL;
     event->name = NULL;
+    return event;
 }
 
 static PQElement eventCopy(PQElement event)
@@ -385,6 +386,16 @@ static bool eventNameAlreadyExistsInDate(EventManager em, Event event)
 
 static EventManagerResult eventAdd(EventManager em, Event event, Date date)
 {
+    if(pqContains(em->events, event))
+    {
+        return EM_EVENT_ID_ALREADY_EXISTS;
+    }
+
+    if(eventNameAlreadyExistsInDate(em, event))
+    {
+        return EM_EVENT_ALREADY_EXISTS;
+    }
+
     PriorityQueueResult pqResult = pqInsert(em, event, date);
     //arguments cant be null because we already checked them
     assert(pqResult != PQ_NULL_ARGUMENT);
@@ -417,17 +428,6 @@ EventManagerResult emAddEventByDate(EventManager em, char* event_name, Date date
     if(!event)
     {
         return EM_OUT_OF_MEMORY;
-    }
-    if(pqContains(em->events, event))
-    {
-        eventDestroy(event);
-        return EM_EVENT_ID_ALREADY_EXISTS;
-    }
-    
-    if(eventNameAlreadyExistsInDate(em, event))
-    {
-        eventDestroy(event);
-        return EM_EVENT_ALREADY_EXISTS;
     }
 
     EventManagerResult emResult = eventAdd(em->events, event, date); 
@@ -467,12 +467,6 @@ int event_id)
     {
         dateDestroy(newDate);
         return EM_OUT_OF_MEMORY;
-    }
-    if(eventNameAlreadyExistsInDate(em, event))
-    {
-        dateDestroy(newDate);
-        eventDestroy(event);
-        return EM_EVENT_ALREADY_EXISTS;
     }
     
     EventManagerResult emResult = eventAdd(em->events, event, newDate);
@@ -528,7 +522,7 @@ static EventManagerResult emFindEvent(EventManager em, int id, Event *event_p)
     {
         if(eventsEqual(iteratorEvent, blankEvent))
         {
-            free(blankEvent);
+            eventDestroy(blankEvent);
             *event_p = &iteratorEvent;
             return EM_SUCCESS;
         }
@@ -636,7 +630,12 @@ char* emGetNextEvent(EventManager em)
     {
         return NULL;
     }
-    return (pqGetFirst(em->events))->name;
+    Event next = pqGetFirst(em->events);
+    if(!next)
+    {
+        return NULL;
+    }
+    return next->name;
 }
 
 
