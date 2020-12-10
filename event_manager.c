@@ -563,7 +563,7 @@ EventManagerResult emChangeEventDate(EventManager em, int event_id, Date new_dat
             
         case EM_SUCCESS:
             //first we check if the date of the event found is not the same as the new date
-            if(dateCompare(*eventToChange->date, new_date) == 0)
+            if(dateCompare((*eventToChange)->date, new_date) == 0)
             {
                 return EM_EVENT_ALREADY_EXISTS;
             }
@@ -581,19 +581,62 @@ EventManagerResult emChangeEventDate(EventManager em, int event_id, Date new_dat
             //args wont be null cause we already checked them
             assert(pqResult != PQ_NULL_ARGUMENT);
             //element exists beacuse we already found it
-            assert(pqResult != PQ_ELEMENT_DOES_NOT_EXISTS)
+            assert(pqResult != PQ_ELEMENT_DOES_NOT_EXISTS);
             
             switch(pqResult)
             {
                 case PQ_OUT_OF_MEMORY:
                     return EM_OUT_OF_MEMORY;
                 case PQ_SUCCESS:
-                    retrun EM_SUCCESS;
+                    return EM_SUCCESS;
             }
             
         case EM_EVENT_ID_NOT_EXISTS:
             return EM_EVENT_ID_NOT_EXISTS;
     }
+}
+
+EventManagerResult emTick(EventManager em, int days)
+{
+    if(!em)
+    {
+        return EM_NULL_ARGUMENT;
+    }
+
+    if(days <= 0)
+    {
+        return EM_INVALID_DATE;
+    }
+    for(int i = 0; i < days; i++)
+    {
+        dateTick(em->currentDate);
+        Event first = pqGetFirst(em->events);
+        while(first && dateCompate(first, em->currentDate) < 0)
+        {
+            PriorityQueueResult pqResult = pqRemove(em->events);
+            assert(pqResult != PQ_NULL_ARGUMENT);
+            first = pqGetFirst(em->events);
+        }
+    }
+    return EM_SUCCESS;
+}
+
+int emGetEventsAmount(EventManager em)
+{
+    if(!em)
+    {
+        return -1;
+    }
+    return pqGetSize(em->events);
+}
+
+char* emGetNextEvent(EventManager em)
+{
+    if(!em)
+    {
+        return NULL;
+    }
+    return (pqGetFirst(em->events))->name;
 }
 
 
