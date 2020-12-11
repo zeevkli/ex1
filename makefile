@@ -1,10 +1,10 @@
 CC = gcc
 OBJS = date.o priority_queue.o event_manager.o
-EXEC1_MAIN = pq_example_tests.o
-EXEC2_MAIN = event_manager_example_tests.o
+EXEC1_MAIN = event_manager_example_tests.o
+EXEC2_MAIN = pq_example_tests.o
 EXEC1 = event_manager
 EXEC2 = priority_queue
-DEBUG_FLAG = -g -DNDEBUG
+DEBUG_FLAG = -g 
 COMP_FLAG = -std=c99 -Wall -Werror -pedantic-errors
 
 $(EXEC1) : $(OBJS) $(EXEC1_MAIN)
