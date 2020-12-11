@@ -139,6 +139,10 @@ static void destroyList(PriorityQueue queue, Node node)
 }
 void pqDestroy(PriorityQueue queue)
 {
+    if(!queue)
+    {
+        return;
+    }
     destroyList(queue, queue->list);
     free(queue);   
 }

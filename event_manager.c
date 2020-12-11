@@ -156,7 +156,10 @@ static PQElement eventCopy(PQElement event)
 static void eventDestroy(PQElement event)
 {
     Event newEvent = (Event) event;
-    pqDestroy(newEvent->memberPQ);
+    if(newEvent->memberPQ) //check if null
+    {
+        pqDestroy(newEvent->memberPQ);
+    }
     free(newEvent->name);
     free(event);
 }
@@ -474,14 +477,13 @@ static bool eventNameAlreadyExistsInDate(EventManager em, Event event)
 
 static EventManagerResult eventAdd(EventManager em, Event event, Date date)
 {
-    if(pqContains(em->events, event))
-    {
-        return EM_EVENT_ID_ALREADY_EXISTS;
-    }
-
     if(eventNameAlreadyExistsInDate(em, event))
     {
         return EM_EVENT_ALREADY_EXISTS;
+    }
+    if(pqContains(em->events, event))
+    {
+        return EM_EVENT_ID_ALREADY_EXISTS;
     }
 
     PriorityQueueResult pqResult = pqInsert(em->events, event, date);
