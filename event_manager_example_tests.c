@@ -1,5 +1,5 @@
 #include "test_utilities.h"
-#include "../event_manager.h"
+#include "event_manager.h"
 #include <stdlib.h>
 #include <string.h>
 

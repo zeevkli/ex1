@@ -18,13 +18,14 @@ date.o : date.c date.h
 
 priority_queue.o : priority_queue.c priority_queue.h
 	$(CC) -c $(DEBUG_FLAG) $(COMP_FLAG) $*.c
-pq_example_tests.o: priority_queue.c priority_queue.h ./tests/pq_example_tests.c
+
+pq_example_tests.o: priority_queue.c priority_queue.h test_utilities.h pq_example_tests.c
 	$(CC) -c $(DEBUG_FLAG) $(COMP_FLAG) $*.c
 
 event_manager.o : priority_queue.c priority_queue.h date.c date.h event_manager.c event_manager.h
 	$(CC) -c $(DEBUG_FLAG) $(COMP_FLAG) $*.c
 
-event_manager_example_tests.o : priority_queue.c priority_queue.h date.c date.h event_manager.c event_manager.h ./tests/event_manager_example_tests.c
+event_manager_example_tests.o : priority_queue.c priority_queue.h date.c date.h event_manager.c event_manager.h test_utilities.h event_manager_example_tests.c
 	$(CC) -c $(DEBUG_FLAG) $(COMP_FLAG) $*.c
 
 clean:
