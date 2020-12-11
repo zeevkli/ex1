@@ -504,7 +504,7 @@ EventManagerResult emAddEventByDate(EventManager em, char* event_name, Date date
     {
         return EM_NULL_ARGUMENT;
     }
-    if(dateCompare(date, em->currentDate) > 0)
+    if(dateCompare(date, em->currentDate) < 0)
     {
         return EM_INVALID_DATE;
     }
@@ -645,7 +645,7 @@ EventManagerResult emChangeEventDate(EventManager em, int event_id, Date new_dat
     {
         return EM_NULL_ARGUMENT;
     }
-    if(dateCompare(new_date, em->currentDate) > 0)
+    if(dateCompare(new_date, em->currentDate) < 0)
     {
         return EM_INVALID_DATE;
     }
@@ -718,7 +718,7 @@ EventManagerResult emTick(EventManager em, int days)
     {
         dateTick(em->currentDate);
         Event first = (Event) pqGetFirst(em->events);
-        while(first && dateCompare(first->date, em->currentDate) < 0)
+        while(first && dateCompare(first->date, em->currentDate) < 0)//ZEEV MAKE SURE dateComare usage is correct and the "<" shouldn't be a ">"
         {
             pqRemove(em->events);
             first = (Event) pqGetFirst(em->events);
