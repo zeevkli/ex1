@@ -46,6 +46,7 @@ static void eventDestroy(PQElement event);
 static bool eventsEqual(PQElement event1, PQElement event2);
 
 static bool eventNameAlreadyExistsInDate(EventManager em, Event event);
+static bool eventNameAlreadyExistsInDate2(EventManager em, Event event, Date date);
 static EventManagerResult eventAdd(EventManager em, Event event, Date date);
 static EventManagerResult emFindEvent(EventManager em, int id, Event *event_p);
 static EventManagerResult emFindMember(EventManager em, int id, Member *member_p);
@@ -56,7 +57,12 @@ static int compareMemberPriority(PQElement memberA, PQElement memberB);
 static void emPrintEvent(Event event, FILE* stream);
 static void printDate(Date date, FILE* stream);
 static void printEventMemberPq(PriorityQueue members, FILE* stream);
+static int dateCompareEarliestFirst(Date date1, Date date2);
 
+static int dateCompareEarliestFirst(Date date1, Date date2)
+{
+    return -dateCompare(date1, date2);
+}
 static PQElementPriority copyIdGeneric(PQElementPriority n) {
     if (!n) {
         return NULL;
@@ -270,7 +276,7 @@ EventManager createEventManager(Date date)
     em->events = pqCreate(eventCopy, eventDestroy, eventsEqual,
 						(PQElementPriority (*)(PQElementPriority)) dateCopy, 
                         (void (*) (PQElementPriority)) dateDestroy,
-                        (int (*) (PQElementPriority, PQElementPriority)) dateCompare);
+                        (int (*) (PQElementPriority, PQElementPriority)) dateCompareEarliestFirst);
     if(!em->events)
     {
         destroyEventManager(em);
@@ -474,7 +480,18 @@ static bool eventNameAlreadyExistsInDate(EventManager em, Event event)
     }
     return false;
 }
-
+//like above but uses external date 
+static bool eventNameAlreadyExistsInDate2(EventManager em, Event event, Date date)
+{
+    PQ_FOREACH(Event, iteratorEvent, em->events)
+    {
+        if(dateCompare(iteratorEvent->date, date) == 0 && strcmp(iteratorEvent->name, event->name) == 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
 static EventManagerResult eventAdd(EventManager em, Event event, Date date)
 {
     if(eventNameAlreadyExistsInDate(em, event))
@@ -599,8 +616,9 @@ EventManagerResult emRemoveEvent(EventManager em, int event_id)
     }
 }
 
-static EventManagerResult emFindEvent(EventManager em, int id, Event *event_p)
+static EventManagerResult emFindEvent(EventManager em, int id, Event* event_p)
 {
+    assert(event_p != NULL);//can't derefence NULL
     if(!em)
     {
         return EM_NULL_ARGUMENT;
@@ -655,8 +673,8 @@ EventManagerResult emChangeEventDate(EventManager em, int event_id, Date new_dat
     {
         return EM_INVALID_EVENT_ID;
     }
-    Event *eventToChange = NULL;
-    EventManagerResult emResult = emFindEvent(em, event_id, eventToChange);
+    Event eventToChange = NULL;
+    EventManagerResult emResult = emFindEvent(em, event_id, &eventToChange);
     
     //args can't be null
     assert(emResult != EM_NULL_ARGUMENT);
@@ -666,35 +684,36 @@ EventManagerResult emChangeEventDate(EventManager em, int event_id, Date new_dat
         case EM_OUT_OF_MEMORY:
             return EM_OUT_OF_MEMORY;
             
-        case EM_SUCCESS:
-            //first we check if the date of the event found is not the same as the new date
-            if(dateCompare((*eventToChange)->date, new_date) == 0)
+        case EM_SUCCESS: ;//intentional semicolon
+            //ZEEV i rewrote this part but i'm not 100% sure it doesn't have weird side effects
+            //check that there isn't already an event by that name
+            Date old_date = eventToChange->date;
+            if(eventNameAlreadyExistsInDate2(em, eventToChange, new_date))
             {
                 return EM_EVENT_ALREADY_EXISTS;
             }
-            //copy the event found from the pointer
-            Event copyOfEvent = (Event) eventCopy(*eventToChange);
-            if(!copyOfEvent)
-            {
-                return EM_OUT_OF_MEMORY;
-            }
-            //change the date
-            PriorityQueueResult pqResult = pqChangePriority(em->events, copyOfEvent,
-            copyOfEvent->date, new_date);
-            eventDestroy(copyOfEvent);
+            //change date on element
+            eventToChange->date = new_date;
             
+            //change the date
+            PriorityQueueResult pqResult = pqChangePriority(em->events, eventToChange,
+            old_date, new_date);
             //args wont be null cause we already checked them
             assert(pqResult != PQ_NULL_ARGUMENT);
             //element exists beacuse we already found it
             assert(pqResult != PQ_ELEMENT_DOES_NOT_EXISTS);
             
+            
             switch(pqResult)
             {
                 case PQ_OUT_OF_MEMORY:
+                    eventToChange->date = old_date;
                     return EM_OUT_OF_MEMORY;
                 case PQ_SUCCESS:
+                    dateDestroy(old_date);
                     return EM_SUCCESS;
                 default:
+                    eventToChange->date = old_date;
                     return EM_ERROR;
             }
             

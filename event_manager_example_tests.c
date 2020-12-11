@@ -33,7 +33,7 @@
         if (test()) {                    \
             printf("[OK]\n");            \
         } else {                         \
-            printf("[Failed]\n\n <span>To see what the test does and why it failed, please check the link at the top of the page to the test file</span>");        \
+            printf("[Failed]\n");        \
         }                                \
     } while (0)
 
@@ -454,7 +454,7 @@ bool testEMChangeEventDateReordersTheEvent() {
     ASSERT(emAddEventByDiff(em, "event2", 2, 2) == EM_SUCCESS);
     ASSERT(emAddEventByDiff(em, "event3", 3, 3) == EM_SUCCESS);
     ASSERT(emAddEventByDiff(em, "event4", 4, 4) == EM_SUCCESS);
-
+    ASSERT(strcmp(emGetNextEvent(em), "event1") == 0);
     date = dateCreate(1, 1, 2000);
     ASSERT(emChangeEventDate(em, 3, date) == EM_SUCCESS);
     ASSERT(strcmp(emGetNextEvent(em), "event3") == 0);
