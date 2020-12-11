@@ -317,8 +317,7 @@ EventManagerResult emAddMember(EventManager em, char* member_name, int member_id
 static EventManagerResult emMemberChangePrioriy(EventManager em, int member_id, memberEnum add_or_remove)
 {
 	Member member = NULL;	
-	EventManagerResult result = emFindMember(em, member_id, &member);
-    assert(result == EM_SUCCESS);
+	emFindMember(em, member_id, &member);
 	assert(member->id == member_id);
     int new_number;
 	switch(add_or_remove)
@@ -437,6 +436,10 @@ EventManagerResult emRemoveMemberFromEvent(EventManager em, int member_id, int e
         return EM_EVENT_AND_MEMBER_NOT_LINKED;
     }
 	PriorityQueueResult pqResult = pqRemoveElement(event->memberPQ, member);
+    if(pqResult == PQ_OUT_OF_MEMORY)
+    {
+        return EM_OUT_OF_MEMORY;
+    }
 	assert(pqResult == PQ_SUCCESS);
 	result = emMemberChangePrioriy(em, member_id, MEMBER_REMOVE_EVENT);
 	if(result == EM_OUT_OF_MEMORY)
@@ -706,8 +709,7 @@ EventManagerResult emTick(EventManager em, int days)
         Event first = (Event) pqGetFirst(em->events);
         while(first && dateCompare(first->date, em->currentDate) < 0)
         {
-            PriorityQueueResult pqResult = pqRemove(em->events);
-            assert(pqResult != PQ_NULL_ARGUMENT);
+            pqRemove(em->events);
             first = (Event) pqGetFirst(em->events);
         }
     }

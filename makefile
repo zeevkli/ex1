@@ -4,8 +4,8 @@ EXEC1_MAIN = pq_example_tests.o
 EXEC2_MAIN = event_manager_example_tests.o
 EXEC1 = event_manager
 EXEC2 = priority_queue
-DEBUG_FLAG = # now empty, assign -g for debug
-COMP_FLAG = -std=c99 -Wall -Werror
+DEBUG_FLAG = -g -DNDEBUG
+COMP_FLAG = -std=c99 -Wall -Werror -pedantic-errors
 
 $(EXEC1) : $(OBJS) $(EXEC1_MAIN)
 	$(CC) $(DEBUG_FLAG) $(OBJS) $(EXEC1_MAIN) -o $@
@@ -18,7 +18,6 @@ date.o : date.c date.h
 
 priority_queue.o : priority_queue.c priority_queue.h
 	$(CC) -c $(DEBUG_FLAG) $(COMP_FLAG) $*.c
-
 pq_example_tests.o: priority_queue.c priority_queue.h ./tests/pq_example_tests.c
 	$(CC) -c $(DEBUG_FLAG) $(COMP_FLAG) $*.c
 
