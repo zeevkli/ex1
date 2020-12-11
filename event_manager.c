@@ -51,7 +51,7 @@ static EventManagerResult eventAdd(EventManager em, Event event, Date date);
 static EventManagerResult emFindEvent(EventManager em, int id, Event *event_p);
 static EventManagerResult emFindMember(EventManager em, int id, Member *member_p);
 
-static EventManagerResult emMemberChangePrioriy(EventManager em, int member_id, memberEnum add_or_remove);
+static EventManagerResult emMemberChangePriority(EventManager em, int member_id, memberEnum add_or_remove);
 static int compareMemberPriority(PQElement memberA, PQElement memberB);
 
 static void emPrintEvent(Event event, FILE* stream);
@@ -216,6 +216,7 @@ static Member memberCreate(int id, char *name)
         return NULL;
     }
     strcpy(member->name, name);
+    member->id = id;
 	member->events_number = 0;
     return (PQElement) member;
 }
@@ -334,7 +335,7 @@ EventManagerResult emAddMember(EventManager em, char* member_name, int member_id
     return EM_SUCCESS;
 }
 
-static EventManagerResult emMemberChangePrioriy(EventManager em, int member_id, memberEnum add_or_remove)
+static EventManagerResult emMemberChangePriority(EventManager em, int member_id, memberEnum add_or_remove)
 {
 	Member member = NULL;	
 	emFindMember(em, member_id, &member);
@@ -344,8 +345,10 @@ static EventManagerResult emMemberChangePrioriy(EventManager em, int member_id, 
 	{
 		case MEMBER_ADD_EVENT:
 			new_number = member->events_number + 1;
+            break;
 		case MEMBER_REMOVE_EVENT:
 			new_number = member->events_number - 1;
+            break;
 		default:
 			assert(1 == 0);// I probably fucked up using the enum
 	};
@@ -355,7 +358,7 @@ static EventManagerResult emMemberChangePrioriy(EventManager em, int member_id, 
 		return EM_OUT_OF_MEMORY;
 	}
 	new_member->events_number = new_number;
-	assert(new_number >= 0);
+	assert(0 <= new_number);
 	PriorityQueueResult pqResult = pqChangePriority(em->members, new_member, member, new_member);
 	if(pqResult == PQ_NULL_ARGUMENT)
 	{
@@ -394,6 +397,7 @@ EventManagerResult emAddMemberToEvent(EventManager em, int member_id, int event_
 	result = emFindMember(em, member_id, &member);
     if(result == EM_MEMBER_ID_NOT_EXISTS)
     {
+        printf("here\n");
         return EM_MEMBER_ID_NOT_EXISTS;
     }
 	assert(result == EM_SUCCESS);
@@ -409,7 +413,7 @@ EventManagerResult emAddMemberToEvent(EventManager em, int member_id, int event_
 		return EM_OUT_OF_MEMORY;
 	}
 	assert(pqResult == PQ_SUCCESS);
-	result = emMemberChangePrioriy(em, member_id, MEMBER_ADD_EVENT);
+	result = emMemberChangePriority(em, member_id, MEMBER_ADD_EVENT);
 	if(result == EM_OUT_OF_MEMORY)
     {
         return EM_OUT_OF_MEMORY;
@@ -461,7 +465,7 @@ EventManagerResult emRemoveMemberFromEvent(EventManager em, int member_id, int e
         return EM_OUT_OF_MEMORY;
     }
 	assert(pqResult == PQ_SUCCESS);
-	result = emMemberChangePrioriy(em, member_id, MEMBER_REMOVE_EVENT);
+	result = emMemberChangePriority(em, member_id, MEMBER_REMOVE_EVENT);
 	if(result == EM_OUT_OF_MEMORY)
     {
         return EM_OUT_OF_MEMORY;
