@@ -99,10 +99,21 @@ static Event eventCreate(Date date, int id, char* name)
 					copyIdGeneric, freeIdGeneric, compareIdsGeneric);
 	if(!pq)
 	{
+        free(event->name);
 		free(event);
-		free(event->name);
 		return NULL;
 	}
+    event->memberPQ = pq;
+    Date date_copy = dateCopy(date);
+    if(!date_copy)
+    {
+        free(event->name);
+        pqDestroy(event->memberPQ);
+        free(event);
+        return NULL;
+    }
+    event->date = date_copy;
+    event->id = id;
 	return event;
 }
 
