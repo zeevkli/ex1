@@ -50,6 +50,7 @@ static bool nameAndDateinPQEvent(EventManager em, char *name, Date date);
 static EventManagerResult eventAdd(EventManager em, Event event, Date date);
 static EventManagerResult emFindEvent(EventManager em, int id, Event *event_p);
 static EventManagerResult emFindMember(EventManager em, int id, Member *member_p);
+static EventManagerResult emRemoveAllMembersFromEvent(EventManager em, Event event);
 
 static EventManagerResult emMemberChangePriority(EventManager em, int member_id, memberEnum add_or_remove);
 static int compareMemberPriority(PQElement memberA, PQElement memberB);
@@ -80,7 +81,7 @@ static void freeIdGeneric(PQElementPriority n) {
 }
 
 static int compareIdsGeneric(PQElementPriority n1, PQElementPriority n2) {
-    return (*(int *) n1 - *(int *) n2);
+    return -(*(int *) n1 - *(int *) n2);
 }
 
 static Event eventCreate(Date date, int id, char* name)
@@ -194,7 +195,7 @@ static int compareMemberPriority(PQElement memberA, PQElement memberB)
     {
         return eventsDelta;
     }
-    return member1->id - member2->id;
+    return -(member1->id - member2->id);
 }
 
 
@@ -600,6 +601,26 @@ EventManagerResult emAddEventByDiff(EventManager em, char* event_name, int days,
     return emResult;
 }
 
+static EventManagerResult emRemoveAllMembersFromEvent(EventManager em, Event event)
+{
+    if(!em || !event)
+    {
+        return EM_NULL_ARGUMENT;
+    }
+    Member first = pqGetFirst(event->memberPQ);
+    while(first)
+    {
+        EventManagerResult emResult = emRemoveMemberFromEvent(em, first->id, event->id);
+        if(emResult == EM_OUT_OF_MEMORY)
+        {
+            return EM_OUT_OF_MEMORY;
+        }
+        assert(emResult == EM_SUCCESS);
+        first = pqGetFirst(event->memberPQ);
+    }
+    return EM_SUCCESS;
+}
+
 EventManagerResult emRemoveEvent(EventManager em, int event_id)
 {
     if(!em)
@@ -610,26 +631,51 @@ EventManagerResult emRemoveEvent(EventManager em, int event_id)
     {
         return EM_INVALID_EVENT_ID;
     }
-    
     Event eventToRemove = createBlankEvent(event_id);
     if(!eventToRemove)
     {
         return EM_OUT_OF_MEMORY;
     }
 
+    bool event_found = false;
+    EventManagerResult emResult;
+
+    //find event in pq to remove it's members
+    PQ_FOREACH(Event, iteratorEvent, em->events)
+    {
+        if(eventsEqual(iteratorEvent, eventToRemove))
+        {
+            emResult = emRemoveAllMembersFromEvent(em, iteratorEvent);
+            if(emResult == EM_OUT_OF_MEMORY)
+            {
+                eventDestroy(eventToRemove);
+                return EM_OUT_OF_MEMORY;
+            }
+            assert(emResult == EM_SUCCESS);
+            event_found = true;
+            break;
+        }
+    }
+    if(!event_found)
+    {
+        eventDestroy(eventToRemove);
+        return EM_EVENT_NOT_EXISTS;
+    }
+    assert(emResult == EM_SUCCESS);
+
+
     PriorityQueueResult pqResult = pqRemoveElement(em->events, eventToRemove);
     eventDestroy(eventToRemove);
     //we already checked for null args
     assert(pqResult != PQ_NULL_ARGUMENT);
+    //if the element does not exist we alresy know it from going over the pq
+    assert(pqResult != PQ_ELEMENT_DOES_NOT_EXISTS);
     switch(pqResult)
     {
-        case PQ_ELEMENT_DOES_NOT_EXISTS:
-            return EM_EVENT_NOT_EXISTS;
         case PQ_SUCCESS:
             return EM_SUCCESS;
         default:
             return EM_ERROR;
-
     }
 }
 
@@ -758,7 +804,15 @@ EventManagerResult emTick(EventManager em, int days)
         Event first = (Event) pqGetFirst(em->events);
         while(first && dateCompare(first->date, em->currentDate) < 0)
         {
-            pqRemove(em->events);
+            EventManagerResult emResult = emRemoveAllMembersFromEvent(em, first);
+            if(emResult == EM_OUT_OF_MEMORY)
+            {
+                return EM_OUT_OF_MEMORY;
+            }
+            assert(emResult == EM_SUCCESS);
+
+            PriorityQueueResult pqResult =  pqRemove(em->events);
+            assert(pqResult == PQ_SUCCESS);
             first = (Event) pqGetFirst(em->events);
         }
     }
@@ -803,10 +857,13 @@ void emPrintAllResponsibleMembers(EventManager em, const char* file_name)
     PQ_FOREACH(Member, iterator, em->members)
     {
         member_counter++;
-        fprintf(stream, "%s,%d", iterator->name, iterator->events_number);
-        if(member_counter != memberPQSize)
+        if(iterator->events_number > 0)
         {
-            fprintf(stream, "\n");
+            fprintf(stream, "%s,%d", iterator->name, iterator->events_number);
+            if(member_counter != memberPQSize)
+            {
+                fprintf(stream, "\n");
+            }
         }
         
     }
