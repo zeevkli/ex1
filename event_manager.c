@@ -46,7 +46,7 @@ static void eventDestroy(PQElement event);
 static bool eventsEqual(PQElement event1, PQElement event2);
 
 static bool eventNameAlreadyExistsInDate(EventManager em, Event event);
-static bool eventNameAlreadyExistsInDate2(EventManager em, Event event, Date date);
+static bool eventNameAlreadyExistsInDate2(EventManager em, char *name, Date date);
 static EventManagerResult eventAdd(EventManager em, Event event, Date date);
 static EventManagerResult emFindEvent(EventManager em, int id, Event *event_p);
 static EventManagerResult emFindMember(EventManager em, int id, Member *member_p);
@@ -498,11 +498,11 @@ static bool eventNameAlreadyExistsInDate(EventManager em, Event event)
     return false;
 }
 //like above but uses external date 
-static bool eventNameAlreadyExistsInDate2(EventManager em, Event event, Date date)
+static bool eventNameAlreadyExistsInDate2(EventManager em, char *name, Date date)
 {
     PQ_FOREACH(Event, iteratorEvent, em->events)
     {
-        if(dateCompare(iteratorEvent->date, date) == 0 && strcmp(iteratorEvent->name, event->name) == 0)
+        if(dateCompare(iteratorEvent->date, date) == 0 && strcmp(iteratorEvent->name, name) == 0)
         {
             return true;
         }
@@ -705,7 +705,7 @@ EventManagerResult emChangeEventDate(EventManager em, int event_id, Date new_dat
             //ZEEV i rewrote this part but i'm not 100% sure it doesn't have weird side effects
             //check that there isn't already an event by that name
             Date old_date = eventToChange->date;
-            if(eventNameAlreadyExistsInDate2(em, eventToChange, new_date))
+            if(eventNameAlreadyExistsInDate2(em, eventToChange->name, new_date))
             {
                 return EM_EVENT_ALREADY_EXISTS;
             }
@@ -756,7 +756,7 @@ EventManagerResult emTick(EventManager em, int days)
     {
         dateTick(em->currentDate);
         Event first = (Event) pqGetFirst(em->events);
-        while(first && dateCompare(first->date, em->currentDate) < 0)//ZEEV MAKE SURE dateComare usage is correct and the "<" shouldn't be a ">"
+        while(first && dateCompare(first->date, em->currentDate) < 0)
         {
             pqRemove(em->events);
             first = (Event) pqGetFirst(em->events);
