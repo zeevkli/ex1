@@ -190,7 +190,7 @@ static int compareMemberPriority(PQElement memberA, PQElement memberB)
     Member member1 = (Member) memberA;
     Member member2 = (Member) memberB;
     int eventsDelta = member1->events_number - member2->events_number;
-    if(!eventsDelta)
+    if(eventsDelta)
     {
         return eventsDelta;
     }
