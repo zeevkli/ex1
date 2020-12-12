@@ -45,8 +45,8 @@ static PQElement eventCopy(PQElement event);
 static void eventDestroy(PQElement event);
 static bool eventsEqual(PQElement event1, PQElement event2);
 
-static bool eventNameAlreadyExistsInDate(EventManager em, Event event);
-static bool eventNameAlreadyExistsInDate2(EventManager em, char *name, Date date);
+static bool eventNameAndDateinPQ(EventManager em, Event event);
+static bool nameAndDateinPQEvent(EventManager em, char *name, Date date);
 static EventManagerResult eventAdd(EventManager em, Event event, Date date);
 static EventManagerResult emFindEvent(EventManager em, int id, Event *event_p);
 static EventManagerResult emFindMember(EventManager em, int id, Member *member_p);
@@ -486,7 +486,7 @@ EventManagerResult emRemoveMemberFromEvent(EventManager em, int member_id, int e
 	assert(result == EM_SUCCESS);
 	return EM_SUCCESS;
 }
-static bool eventNameAlreadyExistsInDate(EventManager em, Event event)
+static bool eventNameAndDateinPQ(EventManager em, Event event)
 {
     PQ_FOREACH(Event, iteratorEvent, em->events)
     {
@@ -498,7 +498,7 @@ static bool eventNameAlreadyExistsInDate(EventManager em, Event event)
     return false;
 }
 //like above but uses external date 
-static bool eventNameAlreadyExistsInDate2(EventManager em, char *name, Date date)
+static bool nameAndDateinPQEvent(EventManager em, char *name, Date date)
 {
     PQ_FOREACH(Event, iteratorEvent, em->events)
     {
@@ -511,7 +511,7 @@ static bool eventNameAlreadyExistsInDate2(EventManager em, char *name, Date date
 }
 static EventManagerResult eventAdd(EventManager em, Event event, Date date)
 {
-    if(eventNameAlreadyExistsInDate(em, event))
+    if(eventNameAndDateinPQ(em, event))
     {
         return EM_EVENT_ALREADY_EXISTS;
     }
@@ -705,7 +705,7 @@ EventManagerResult emChangeEventDate(EventManager em, int event_id, Date new_dat
             //ZEEV i rewrote this part but i'm not 100% sure it doesn't have weird side effects
             //check that there isn't already an event by that name
             Date old_date = eventToChange->date;
-            if(eventNameAlreadyExistsInDate2(em, eventToChange->name, new_date))
+            if(nameAndDateinPQEvent(em, eventToChange->name, new_date))
             {
                 return EM_EVENT_ALREADY_EXISTS;
             }
