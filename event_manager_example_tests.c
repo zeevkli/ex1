@@ -1165,15 +1165,11 @@ int main(int argc, char **argv) {
         fprintf(stdout, "Usage: priority_queue_tests <test index>\n");
         return 0;
     }
-
     int test_idx = strtol(argv[1], NULL, 10);
     if (test_idx < 1 || test_idx > NUMBER_TESTS) {
         fprintf(stderr, "Invalid test index %d\n", test_idx);
         return 0;
     }
-
     RUN_TEST(tests[test_idx - 1], testNames[test_idx - 1]);
     return 0;
-
 }
-

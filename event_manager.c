@@ -259,7 +259,7 @@ static void memberFree(PQElement member)
 {
     Member memberNew = (Member) member;
     free(memberNew->name);
-    free(memberNew);
+    free(member);
 }
 
 EventManager createEventManager(Date date)
@@ -351,7 +351,8 @@ static EventManagerResult emMemberChangePriority(EventManager em, int member_id,
 		return EM_OUT_OF_MEMORY;
 	}
     PriorityQueueResult result = pqRemoveElement(em->members, memberTmp);//delete the member in PQ  
-	assert(result == PQ_SUCCESS);
+	memberTmp = NULL; //before this line points to garbage
+    assert(result == PQ_SUCCESS);
 	assert(member->id == member_id);
     int new_number;
 	switch(add_or_remove)
