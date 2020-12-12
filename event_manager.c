@@ -20,7 +20,7 @@ typedef struct Event_t
     Date date;
     int id;
     char *name;
-    PriorityQueue memberPQ;
+    PriorityQueue memberPQ; 
 }*Event;
 
 struct EventManager_t
@@ -231,7 +231,13 @@ static PQElement memberCopy(PQElement member)
     if(!memberNew->name){
         return NULL;
     }
-    return (PQElement) memberCreate(memberNew->id, memberNew->name);
+    Member member_copy = (PQElement) memberCreate(memberNew->id, memberNew->name);
+    if(!member_copy)
+    {
+        return NULL;
+    }
+    member_copy->events_number = memberNew->events_number;
+    return member_copy;
 }
 
 static bool membersEqual(PQElement member1, PQElement member2)
@@ -337,8 +343,15 @@ EventManagerResult emAddMember(EventManager em, char* member_name, int member_id
 
 static EventManagerResult emMemberChangePriority(EventManager em, int member_id, memberEnum add_or_remove)
 {
-	Member member = NULL;	
-	emFindMember(em, member_id, &member);
+	Member memberTmp = NULL;	
+	emFindMember(em, member_id, &memberTmp);//member should exist 
+    Member member = (Member) memberCopy(memberTmp);
+	if(!member)
+	{
+		return EM_OUT_OF_MEMORY;
+	}
+    PriorityQueueResult result = pqRemoveElement(em->members, memberTmp);//delete the member in PQ  
+	assert(result == PQ_SUCCESS);
 	assert(member->id == member_id);
     int new_number;
 	switch(add_or_remove)
@@ -352,19 +365,18 @@ static EventManagerResult emMemberChangePriority(EventManager em, int member_id,
 		default:
 			assert(1 == 0);// I probably fucked up using the enum
 	};
-	Member new_member = (Member) memberCopy(member);
-	if(!new_member)
-	{
-		return EM_OUT_OF_MEMORY;
-	}
-	new_member->events_number = new_number;
+	member->events_number = new_number;
 	assert(0 <= new_number);
-	PriorityQueueResult pqResult = pqChangePriority(em->members, new_member, member, new_member);
-	if(pqResult == PQ_NULL_ARGUMENT)
+    
+    result = pqInsert(em->members, member, member);
+	if(result == PQ_NULL_ARGUMENT)
 	{
+        memberFree(member);
 		return EM_NULL_ARGUMENT;
 	}
-	assert(pqResult == PQ_SUCCESS);
+	assert(result == PQ_SUCCESS);
+
+    memberFree(member);
 	return EM_SUCCESS;
 }
 EventManagerResult emAddMemberToEvent(EventManager em, int member_id, int event_id)
@@ -397,8 +409,8 @@ EventManagerResult emAddMemberToEvent(EventManager em, int member_id, int event_
 	result = emFindMember(em, member_id, &member);
     if(result == EM_MEMBER_ID_NOT_EXISTS)
     {
-        printf("here\n");
         return EM_MEMBER_ID_NOT_EXISTS;
+    
     }
 	assert(result == EM_SUCCESS);
 	

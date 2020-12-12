@@ -29,7 +29,7 @@
  */
 #define RUN_TEST(test, name)                  \
     do {                                 \
-      printf("+ Running <b>%s</b> ... ", name);   \
+      printf("Running %s ... ", name);   \
         if (test()) {                    \
             printf("[OK]\n");            \
         } else {                         \
