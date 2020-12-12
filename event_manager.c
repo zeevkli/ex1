@@ -793,15 +793,20 @@ char* emGetNextEvent(EventManager em)
 
 void emPrintAllResponsibleMembers(EventManager em, const char* file_name)
 {
-    FILE* stream = fopen(file_name, "r");
+    FILE* stream = fopen(file_name, "w");
+    if(!stream)
+    {
+        return;
+    }
     PQ_FOREACH(Member, iterator, em->members)
     {
         fprintf(stream, "%s,%d/n", iterator->name, iterator->events_number);
     }
+    fclose(stream);
 }
 void emPrintAllEvents(EventManager em, const char* file_name)
 {
-    FILE* stream = fopen(file_name, "r");
+    FILE* stream = fopen(file_name, "w");
     if(!stream)
     {
         return;
