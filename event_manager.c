@@ -793,6 +793,8 @@ char* emGetNextEvent(EventManager em)
 
 void emPrintAllResponsibleMembers(EventManager em, const char* file_name)
 {
+    int member_counter = 0;
+    int memberPQSize = pqGetSize(em->members);
     FILE* stream = fopen(file_name, "w");
     if(!stream)
     {
@@ -800,12 +802,20 @@ void emPrintAllResponsibleMembers(EventManager em, const char* file_name)
     }
     PQ_FOREACH(Member, iterator, em->members)
     {
-        fprintf(stream, "%s,%d/n", iterator->name, iterator->events_number);
+        member_counter++;
+        fprintf(stream, "%s,%d", iterator->name, iterator->events_number);
+        if(member_counter != memberPQSize)
+        {
+            fprintf(stream, "\n");
+        }
+        
     }
     fclose(stream);
 }
 void emPrintAllEvents(EventManager em, const char* file_name)
 {
+    int event_counter = 0;
+    int eventPQSize = pqGetSize(em->events);
     FILE* stream = fopen(file_name, "w");
     if(!stream)
     {
@@ -813,7 +823,12 @@ void emPrintAllEvents(EventManager em, const char* file_name)
     }
     PQ_FOREACH(Event, iteratorEvent, em->events)
     {
+        event_counter++;
         emPrintEvent(iteratorEvent, stream);
+        if(event_counter != eventPQSize)
+        {
+            fprintf(stream, "\n");
+        }
     }
     fclose(stream);
 }
@@ -823,27 +838,22 @@ static void emPrintEvent(Event event, FILE* stream)
     fprintf(stream, "%s,", event->name);
     printDate(event->date, stream);
     printEventMemberPq(event->memberPQ, stream);
-    fprintf(stream, "\n");
 }
 
 static void printDate(Date date, FILE* stream)
 {
     int day, month, year;
     dateGet(date, &day, &month, &year);
-    fprintf(stream, "%d.%d.%d,", day, month, year);
+    fprintf(stream, "%d.%d.%d", day, month, year);
 }
 
 static void printEventMemberPq(PriorityQueue members, FILE* stream)
 {
-    int size = pqGetSize(members);
-    int memberCounter = 0;
+    // int size = pqGetSize(members);
+    // int memberCounter = 0;
     PQ_FOREACH(Member, iteratorMember, members)
     {
-        memberCounter++;
+        fprintf(stream, ",");
         fprintf(stream, "%s", iteratorMember->name);
-        if(memberCounter != size)
-        {
-            fprintf(stream, ",");
-        }
     }
 }
