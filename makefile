@@ -10,8 +10,8 @@ COMP_FLAG = -std=c99 -Wall -Werror -pedantic-errors
 $(EXEC1) : $(OBJS) $(EXEC1_MAIN)
 	$(CC) $(DEBUG_FLAG) $(OBJS) $(EXEC1_MAIN) -o $@
 
-$(EXEC2) : $(OBJS) $(EXEC2_MAIN)
-	$(CC) $(DEBUG_FLAG) $(OBJS) $(EXEC2_MAIN) -o $@
+$(EXEC2) : priority_queue.o $(EXEC2_MAIN)
+	$(CC) $(DEBUG_FLAG) priority_queue.o $(EXEC2_MAIN) -o $@
 
 date.o : date.c date.h
 	$(CC) -c $(DEBUG_FLAG) $(COMP_FLAG) $*.c
