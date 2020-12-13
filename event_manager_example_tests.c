@@ -89,8 +89,6 @@ bool isFilePrintOutputCorrect(char *file_name, char *expected_output) {
 
 
     writeOutputToFile(file_name, expected_output);
-    printf("<br>&nbsp;&nbsp;&nbsp;&nbsp;> Printing output: <a href='/staging/{STAGING_ID}/%s'>%s</a> | Expected output: <a href='/staging/{STAGING_ID}/expected_%s'>expected_%s</a> (Might be correct)",
-           file_name, file_name, file_name, file_name);
     if (strlen(expected_output) != numbytes) {
         free(buffer);
         return false;
