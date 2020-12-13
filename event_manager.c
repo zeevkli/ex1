@@ -167,7 +167,7 @@ static void eventDestroy(PQElement event)
     {
         pqDestroy(newEvent->memberPQ);
     }
-	dateDestroy(event->date);
+	dateDestroy(newEvent->date);
     free(newEvent->name);
     free(event);
 }
