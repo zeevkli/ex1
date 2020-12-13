@@ -839,9 +839,7 @@ char* emGetNextEvent(EventManager em)
     {
         return NULL;
     }
-    char *name = (char *) malloc(strlen(next->name) + 1);
-    strcpy(name, next->name);
-    return name;
+    return next->name;
 }
 
 
