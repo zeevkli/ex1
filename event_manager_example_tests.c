@@ -121,7 +121,6 @@ bool testEMCreateStandardTest() {
     destroyEventManager(em);
     return result;
 }
-
 bool testEMDestroyNullArgument() {
     destroyEventManager(NULL);
     return true;
