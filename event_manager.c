@@ -739,53 +739,39 @@ EventManagerResult emChangeEventDate(EventManager em, int event_id, Date new_dat
     }
     Event eventToChange = NULL;
     EventManagerResult emResult = emFindEvent(em, event_id, &eventToChange);
-    
-    //args can't be null
-    assert(emResult != EM_NULL_ARGUMENT);
-    
-    switch(emResult)
+    if(emResult != EM_SUCCESS)
     {
-        case EM_OUT_OF_MEMORY:
-            return EM_OUT_OF_MEMORY;
-            
-        case EM_SUCCESS: ;//intentional semicolon
-            //ZEEV i rewrote this part but i'm not 100% sure it doesn't have weird side effects
-            //check that there isn't already an event by that name
-            Date old_date = eventToChange->date;
-            if(nameAndDateinPQEvent(em, eventToChange->name, new_date))
-            {
-                return EM_EVENT_ALREADY_EXISTS;
-            }
-            //change date on element
-            eventToChange->date = new_date;
-            
-            //change the date
-            PriorityQueueResult pqResult = pqChangePriority(em->events, eventToChange,
-            old_date, new_date);
-            //args wont be null cause we already checked them
-            assert(pqResult != PQ_NULL_ARGUMENT);
-            //element exists beacuse we already found it
-            assert(pqResult != PQ_ELEMENT_DOES_NOT_EXISTS);
-            
-            
-            switch(pqResult)
-            {
-                case PQ_OUT_OF_MEMORY:
-                    eventToChange->date = old_date;
-                    return EM_OUT_OF_MEMORY;
-                case PQ_SUCCESS:
-                    dateDestroy(old_date);
-                    return EM_SUCCESS;
-                default:
-                    eventToChange->date = old_date;
-                    return EM_ERROR;
-            }
-            
-        case EM_EVENT_ID_NOT_EXISTS:
-            return EM_EVENT_ID_NOT_EXISTS;
-        default:
-            return EM_ERROR;
+        return emResult;
     }
+    assert(emResult == EM_SUCCESS || emResult == EM_EVENT_ID_NOT_EXISTS || emResult == EM_OUT_OF_MEMORY);
+    if(nameAndDateinPQEvent(em, eventToChange->name, new_date))
+    {
+        return EM_EVENT_ALREADY_EXISTS;
+    }
+    Date old_date = eventToChange->date;
+    PriorityQueueResult pqResult = pqChangePriority(em->events, eventToChange,
+    old_date, new_date);//change the date
+    if(pqResult == PQ_OUT_OF_MEMORY)
+    {
+        return EM_OUT_OF_MEMORY;
+    }
+    assert(pqResult == PQ_SUCCESS);
+    //now we change the date in the event elemnt itself
+    eventToChange = NULL;
+    emResult = emFindEvent(em, event_id, &eventToChange);
+    if(emResult != EM_SUCCESS)
+    {
+        return emResult;
+    }
+    assert(emResult == EM_SUCCESS || emResult == EM_EVENT_ID_NOT_EXISTS || emResult == EM_OUT_OF_MEMORY);
+    dateDestroy(eventToChange->date);
+    Date date_copy = dateCopy(new_date);
+    if(!date_copy)
+    {
+        return EM_OUT_OF_MEMORY;
+    }
+    eventToChange->date = date_copy;
+    return EM_SUCCESS;
 }
 
 EventManagerResult emTick(EventManager em, int days)
