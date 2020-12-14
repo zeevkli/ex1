@@ -40,6 +40,7 @@ static Member memberCreate(int id, char *name);
 static void memberFree(PQElement member);
 
 static Event eventCreate(Date date, int id, char* name);
+static Event eventCreateNoEmptyPQ(Date date, int id, char* name);
 static Event createBlankEvent(int id);
 static PQElement eventCopy(PQElement event);
 static void eventDestroy(PQElement event);
@@ -121,6 +122,37 @@ static Event eventCreate(Date date, int id, char* name)
 	return event;
 }
 
+static Event eventCreateNoEmptyPQ(Date date, int id, char* name)
+{
+	if(!name)
+	{
+		return NULL;
+	}
+	Event event = (Event) malloc(sizeof(*event));
+	if(!event)
+	{
+		return NULL;
+	}
+    event->name = (char *) malloc(strlen(name) + 1);
+	if(!event->name)
+	{
+		free(event);
+		return NULL;
+	}
+	strcpy(event->name, name);
+
+    Date date_copy = dateCopy(date);
+    if(!date_copy)
+    {
+        eventDestroy(event);
+        return NULL;
+    }
+    event->memberPQ = NULL;
+    event->date = date_copy;
+    event->id = id;
+	return event;
+}
+
 static Event createBlankEvent(int id)
 {
     Event event = (Event) malloc(sizeof(*event));
@@ -143,7 +175,7 @@ static PQElement eventCopy(PQElement event)
 	}
 	Event newEvent = (Event) event;
     
-	Event eventCopy = eventCreate(newEvent->date, newEvent->id, newEvent->name);
+	Event eventCopy = eventCreateNoEmptyPQ(newEvent->date, newEvent->id, newEvent->name);
 	if(!eventCopy)
 	{
 		return NULL;
