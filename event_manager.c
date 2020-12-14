@@ -163,13 +163,17 @@ static PQElement eventCopy(PQElement event)
 static void eventDestroy(PQElement event)
 {
     Event newEvent = (Event) event;
+    if(!newEvent)
+    {
+        return;
+    }
     if(newEvent->memberPQ) //check if null
     {
         pqDestroy(newEvent->memberPQ);
     }
 	dateDestroy(newEvent->date);
     free(newEvent->name);
-    free(event);
+    free(newEvent);
 }
 static bool eventsEqual(PQElement event1, PQElement event2)
 {

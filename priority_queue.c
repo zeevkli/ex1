@@ -3,9 +3,9 @@
 #include "priority_queue.h"
 typedef struct ListNode
 {
-PQElement element;
-PQElementPriority elementPriority;
-struct ListNode* next;
+    PQElement element;
+    PQElementPriority elementPriority;
+    struct ListNode* next;
 }*Node;
 
 typedef struct PriorityQueue_t
@@ -225,6 +225,7 @@ PriorityQueueResult pqInsert(PriorityQueue queue, PQElement element, PQElementPr
 
     if (elementPriorityCopy == NULL)
     {
+        queue->freeElementFunction(elementCopy);
         return PQ_OUT_OF_MEMORY;
     }
 
@@ -233,6 +234,8 @@ PriorityQueueResult pqInsert(PriorityQueue queue, PQElement element, PQElementPr
 
     if (node == NULL)
     {
+        queue->freeElementFunction(elementCopy);
+        queue->freeElementPriority(elementPriorityCopy);
         return PQ_OUT_OF_MEMORY;
     }
     //Find the node that our node needs to be inserted after
