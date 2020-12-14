@@ -106,17 +106,14 @@ static Event eventCreate(Date date, int id, char* name)
 					copyIdGeneric, freeIdGeneric, compareIdsGeneric);
 	if(!pq)
 	{
-        free(event->name);
-		free(event);
+        eventDestroy(event);
 		return NULL;
 	}
     event->memberPQ = pq;
     Date date_copy = dateCopy(date);
     if(!date_copy)
     {
-        free(event->name);
-        pqDestroy(event->memberPQ);
-        free(event);
+        eventDestroy(event);
         return NULL;
     }
     event->date = date_copy;
@@ -151,25 +148,27 @@ static PQElement eventCopy(PQElement event)
 	{
 		return NULL;
 	}
-	eventCopy->memberPQ = pqCopy(newEvent->memberPQ);
-	if(!eventCopy->memberPQ)
-	{
-		eventDestroy(eventCopy);
-		return NULL;
-	}
+    if(newEvent->memberPQ == NULL)
+    {
+        eventCopy->memberPQ = NULL;
+        return (PQElement) eventCopy;
+    }
+    eventCopy->memberPQ = pqCopy(newEvent->memberPQ);
+    if(!eventCopy->memberPQ)
+    {
+        eventDestroy(eventCopy);
+        return NULL;
+    }
 	return (PQElement) eventCopy;
 }
 
 static void eventDestroy(PQElement event)
 {
     Event newEvent = (Event) event;
-    if(newEvent->memberPQ) //check if null
-    {
-        pqDestroy(newEvent->memberPQ);
-    }
+    pqDestroy(newEvent->memberPQ);
 	dateDestroy(newEvent->date);
     free(newEvent->name);
-    free(event);
+    free(newEvent);
 }
 static bool eventsEqual(PQElement event1, PQElement event2)
 {
@@ -309,6 +308,7 @@ void destroyEventManager(EventManager em)
 	dateDestroy(em->currentDate);
 	pqDestroy(em->events);
 	pqDestroy(em->members);
+    free(em);
 }
 
 EventManagerResult emAddMember(EventManager em, char* member_name, int member_id)
