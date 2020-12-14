@@ -182,7 +182,6 @@ static PQElement eventCopy(PQElement event)
 	}
     if(newEvent->memberPQ == NULL)
     {
-        eventCopy->memberPQ = NULL;
         return (PQElement) eventCopy;
     }
     eventCopy->memberPQ = pqCopy(newEvent->memberPQ);
