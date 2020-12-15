@@ -829,8 +829,10 @@ EventManagerResult emTick(EventManager em, int days)
             }
             assert(emResult == EM_SUCCESS);
 
-            PriorityQueueResult pqResult =  pqRemove(em->events);
-            assert(pqResult == PQ_SUCCESS);
+            // Commented this code becuase it does not compile with DNDEBUG, because pqResult is not used
+            // PriorityQueueResult pqResult =  pqRemove(em->events);
+            // assert(pqResult == PQ_SUCCESS);
+            pqRemove(em->events);
             first = (Event) pqGetFirst(em->events);
         }
     }
