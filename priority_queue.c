@@ -104,6 +104,7 @@ static Node copyList(PriorityQueue queue)
     }
     return new_list;
 }
+
 PriorityQueue pqCreate(CopyPQElement copy_element,
 					   FreePQElement free_element,
 					   EqualPQElements equal_elements,
@@ -127,6 +128,7 @@ PriorityQueue pqCreate(CopyPQElement copy_element,
     queue->comparePrioritiesFunction = compare_priorities;
     return queue;
 }
+
 static void destroyList(PriorityQueue queue, Node node)
 {
     Node current = node;
@@ -138,6 +140,7 @@ static void destroyList(PriorityQueue queue, Node node)
         destroyNode(queue, tmp);
     }
 }
+
 void pqDestroy(PriorityQueue queue)
 {
     if(!queue)
@@ -147,6 +150,7 @@ void pqDestroy(PriorityQueue queue)
     destroyList(queue, queue->list);
     free(queue);   
 }
+
 PriorityQueue pqCopy(PriorityQueue queue)
 {
     if(queue == NULL)
@@ -273,6 +277,7 @@ bool pqContains(PriorityQueue queue, PQElement element)
     }
     return false;
 }
+
 PriorityQueueResult pqRemoveElement(PriorityQueue queue, PQElement element)
 {
     if(!queue || !element)
@@ -310,9 +315,9 @@ PriorityQueueResult pqRemoveElement(PriorityQueue queue, PQElement element)
         current = next;
         next = next->next;
     }
-    return PQ_ELEMENT_DOES_NOT_EXISTS;
-    
+    return PQ_ELEMENT_DOES_NOT_EXISTS; 
 }
+
 static bool nodeCheck(PriorityQueue queue,Node a, PQElement e, PQElementPriority p)
 {
     if(!a || !p || !e || !queue)
@@ -380,6 +385,7 @@ PriorityQueueResult pqChangePriority(PriorityQueue     queue,
     }
     return PQ_ELEMENT_DOES_NOT_EXISTS;
 }
+
 PriorityQueueResult pqRemove(PriorityQueue queue)
 {
     if (!queue)

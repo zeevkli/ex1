@@ -65,7 +65,8 @@ static int dateCompareEarliestFirst(Date date1, Date date2)
 {
     return -dateCompare(date1, date2);
 }
-static PQElementPriority copyIdGeneric(PQElementPriority n) {
+static PQElementPriority copyIdGeneric(PQElementPriority n) 
+{
     if (!n) {
         return NULL;
     }
@@ -77,11 +78,13 @@ static PQElementPriority copyIdGeneric(PQElementPriority n) {
     return copy;
 }
 
-static void freeIdGeneric(PQElementPriority n) {
+static void freeIdGeneric(PQElementPriority n) 
+{
     free(n);
 }
 
-static int compareIdsGeneric(PQElementPriority n1, PQElementPriority n2) {
+static int compareIdsGeneric(PQElementPriority n1, PQElementPriority n2) 
+{
     return -(*(int *) n1 - *(int *) n2);
 }
 
@@ -201,6 +204,7 @@ static void eventDestroy(PQElement event)
     free(new_event->name);
     free(new_event);
 }
+
 static bool eventsEqual(PQElement event1, PQElement event2)
 {
     if(!event1 || !event2)
@@ -330,6 +334,7 @@ EventManager createEventManager(Date date)
 	}
     return em;
 }
+
 void destroyEventManager(EventManager em)
 {
 	if(!em)
@@ -409,10 +414,10 @@ static EventManagerResult emMemberChangePriority(EventManager em, int member_id,
 		return EM_NULL_ARGUMENT;
 	}
 	assert(result == PQ_SUCCESS);
-
     memberFree(member);
 	return EM_SUCCESS;
 }
+
 EventManagerResult emAddMemberToEvent(EventManager em, int member_id, int event_id)
 {
     if(!em)
@@ -438,7 +443,6 @@ EventManagerResult emAddMemberToEvent(EventManager em, int member_id, int event_
         return EM_EVENT_ID_NOT_EXISTS;
     }
 	assert(result == EM_SUCCESS);
-	
     Member member = NULL;
 	result = emFindMember(em, member_id, &member);
     if(result == EM_MEMBER_ID_NOT_EXISTS)
@@ -447,12 +451,10 @@ EventManagerResult emAddMemberToEvent(EventManager em, int member_id, int event_
     
     }
 	assert(result == EM_SUCCESS);
-	
     if(pqContains(event->member_pq, member))
     {
         return EM_EVENT_AND_MEMBER_ALREADY_LINKED;
     }
-	
 	PriorityQueueResult pq_result = pqInsert(event->member_pq, member, &member->id);
     if(pq_result == PQ_OUT_OF_MEMORY)
 	{
@@ -519,6 +521,7 @@ EventManagerResult emRemoveMemberFromEvent(EventManager em, int member_id, int e
 	assert(result == EM_SUCCESS);
 	return EM_SUCCESS;
 }
+
 static bool eventNameAndDateinPQ(EventManager em, Event event)
 {
     PQ_FOREACH(Event, iterator_event, em->events)
@@ -668,10 +671,8 @@ EventManagerResult emRemoveEvent(EventManager em, int event_id)
     {
         return EM_OUT_OF_MEMORY;
     }
-
     bool event_found = false;
     EventManagerResult em_result;
-
     //find event in pq to remove it's members
     PQ_FOREACH(Event, iterator_event, em->events)
     {
@@ -694,12 +695,9 @@ EventManagerResult emRemoveEvent(EventManager em, int event_id)
         return EM_EVENT_NOT_EXISTS;
     }
     assert(em_result == EM_SUCCESS);
-
-
     PriorityQueueResult pq_result = pqRemoveElement(em->events, event_to_remove);
     eventDestroy(event_to_remove);
-    //we already checked for null args
-    assert(pq_result != PQ_NULL_ARGUMENT);
+    assert(pq_result != PQ_NULL_ARGUMENT);    //we already checked for null args
     //if the element does not exist we alresy know it from going over the pq
     assert(pq_result != PQ_ELEMENT_DOES_NOT_EXISTS);
     switch(pq_result)
@@ -828,10 +826,6 @@ EventManagerResult emTick(EventManager em, int days)
                 return EM_OUT_OF_MEMORY;
             }
             assert(em_result == EM_SUCCESS);
-
-            // Commented this code becuase it does not compile with DNDEBUG, because pq_result is not used
-            // PriorityQueueResult pq_result =  pqRemove(em->events);
-            // assert(pq_result == PQ_SUCCESS);
             pqRemove(em->events);
             first = (Event) pqGetFirst(em->events);
         }
@@ -862,7 +856,6 @@ char* emGetNextEvent(EventManager em)
     return next->name;
 }
 
-
 void emPrintAllResponsibleMembers(EventManager em, const char* file_name)
 {
     int member_counter = 0;
@@ -887,6 +880,7 @@ void emPrintAllResponsibleMembers(EventManager em, const char* file_name)
     }
     fclose(stream);
 }
+
 void emPrintAllEvents(EventManager em, const char* file_name)
 {
     int event_counter = 0;
