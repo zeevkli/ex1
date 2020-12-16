@@ -83,18 +83,18 @@ int dateCompare(Date date1, Date date2)
     {
         return 0;
     }
-	int yearDelta = date1->year - date2->year;
-	int monthDelta = date1->month - date2->month;
-	int dayDelta = date1->day - date2->day;
-	if(yearDelta != 0)
+	int year_delta = date1->year - date2->year;
+	int month_delta = date1->month - date2->month;
+	int day_delta = date1->day - date2->day;
+	if(year_delta != 0)
 	{
-		return yearDelta;
+		return year_delta;
 	}
-	if(monthDelta != 0)
+	if(month_delta != 0)
 	{
-		return monthDelta;
+		return month_delta;
 	}
-    return dayDelta;
+    return day_delta;
 }
 
 void dateTick(Date date)
