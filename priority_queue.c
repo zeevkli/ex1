@@ -1,19 +1,21 @@
 #include <stdlib.h>
 #include <assert.h>
+
 #include "priority_queue.h"
+
 typedef struct ListNode
 {
-PQElement element;
-PQElementPriority elementPriority;
-struct ListNode* next;
+    PQElement element;
+    PQElementPriority element_priority;
+    struct ListNode* next;
 }*Node;
 
-typedef struct PriorityQueue_t
+struct PriorityQueue_t
 {
     int size;
     Node list;
 
-    Node iteratorCurrentPosition;
+    Node iterator_current_position;
 
     CopyPQElement copyElementFunction;
     FreePQElement freeElementFunction;
@@ -21,15 +23,15 @@ typedef struct PriorityQueue_t
     CopyPQElementPriority copyPriorityFunction;
     FreePQElementPriority freeElementPriority; 
     ComparePQElementPriorities comparePrioritiesFunction;
-}PQ;
+};
 
-static Node createNode(PQElement element, PQElementPriority elementPriority);
+static Node createNode(PQElement element, PQElementPriority element_priority);
 static void destroyNode(PriorityQueue queue, Node node);
 static Node copyNode(PriorityQueue queue, Node old);
 static Node copyList(PriorityQueue queue);
 static void destroyList(PriorityQueue queue, Node node);
 
-static Node createNode(PQElement element, PQElementPriority elementPriority)
+static Node createNode(PQElement element, PQElementPriority element_priority)
 {
     Node node = malloc(sizeof(*node));
     if(node == NULL)
@@ -37,7 +39,7 @@ static Node createNode(PQElement element, PQElementPriority elementPriority)
         return NULL;
     }
     node->element = element;
-    node->elementPriority = elementPriority;
+    node->element_priority = element_priority;
     node->next = NULL;
     return node;
 }
@@ -46,7 +48,7 @@ static void destroyNode(PriorityQueue queue, Node node)
 {
     node->next = NULL;
     queue->freeElementFunction(node->element);
-    queue->freeElementPriority(node->elementPriority);
+    queue->freeElementPriority(node->element_priority);
     free(node);
 }
 
@@ -63,8 +65,8 @@ static Node copyNode(PriorityQueue queue, Node old)
         free(new_node);
         return NULL;
     }
-    new_node->elementPriority = queue->copyPriorityFunction(old->elementPriority);
-    if(new_node->elementPriority == NULL)
+    new_node->element_priority = queue->copyPriorityFunction(old->element_priority);
+    if(new_node->element_priority == NULL)
     {
         queue->freeElementFunction(new_node->element);
         free(new_node);
@@ -117,7 +119,7 @@ PriorityQueue pqCreate(CopyPQElement copy_element,
     }
     queue->list = NULL;
     queue->size = 0;
-    queue->iteratorCurrentPosition = NULL;
+    queue->iterator_current_position = NULL;
     queue->copyElementFunction = copy_element;
     queue->freeElementFunction = free_element;
     queue->isEqualElementFunction = equal_elements;
@@ -162,7 +164,7 @@ PriorityQueue pqCopy(PriorityQueue queue)
     {
         return NULL;
     }
-    queue->iteratorCurrentPosition = NULL;
+    queue->iterator_current_position = NULL;
     if(queue->list != NULL)
     {
         new_queue->list = copyList(queue);
@@ -177,7 +179,7 @@ PriorityQueue pqCopy(PriorityQueue queue)
         new_queue->list = NULL;
     }
     new_queue->size = queue->size;
-    new_queue->iteratorCurrentPosition = NULL;
+    new_queue->iterator_current_position = NULL;
     return new_queue;
 }
 
@@ -190,7 +192,7 @@ PriorityQueueResult pqClear(PriorityQueue queue)
     destroyList(queue, queue->list);
     queue->list = NULL;
     queue->size = 0;
-    queue->iteratorCurrentPosition = NULL;
+    queue->iterator_current_position = NULL;
     return PQ_SUCCESS; 
 }
 
@@ -212,27 +214,30 @@ PriorityQueueResult pqInsert(PriorityQueue queue, PQElement element, PQElementPr
         return PQ_NULL_ARGUMENT;
     }
 
-    queue->iteratorCurrentPosition = NULL;
+    queue->iterator_current_position = NULL;
 
     //Copy element and priority and check they are not null
-    PQElement elementCopy = queue->copyElementFunction(element);
-    if (elementCopy == NULL)
+    PQElement element_copy = queue->copyElementFunction(element);
+    if (element_copy == NULL)
     {
         return PQ_OUT_OF_MEMORY;
     }
     
-    PQElementPriority elementPriorityCopy = queue->copyPriorityFunction(priority);
+    PQElementPriority element_priority_copy = queue->copyPriorityFunction(priority);
 
-    if (elementPriorityCopy == NULL)
+    if (!element_priority_copy)
     {
+        queue->freeElementFunction(element_copy);
         return PQ_OUT_OF_MEMORY;
     }
 
     //create node and check it's not null
-    Node node = createNode(elementCopy, elementPriorityCopy);
+    Node node = createNode(element_copy, element_priority_copy);
 
-    if (node == NULL)
+    if (!node)
     {
+        queue->freeElementFunction(element_copy);
+        queue->freeElementPriority(element_priority_copy);
         return PQ_OUT_OF_MEMORY;
     }
     //Find the node that our node needs to be inserted after
@@ -247,7 +252,7 @@ PriorityQueueResult pqInsert(PriorityQueue queue, PQElement element, PQElementPr
     }
     
     //compare with current
-    if(queue->comparePrioritiesFunction(node->elementPriority,current->elementPriority) > 0)
+    if(queue->comparePrioritiesFunction(node->element_priority,current->element_priority) > 0)
     {
         assert(current);
         node->next = current;
@@ -258,7 +263,7 @@ PriorityQueueResult pqInsert(PriorityQueue queue, PQElement element, PQElementPr
     
     //traverse list until current->next has LOWER priority than "node" 
     while(current->next != NULL && 
-    queue->comparePrioritiesFunction(node->elementPriority,current->next->elementPriority) <= 0)
+    queue->comparePrioritiesFunction(node->element_priority,current->next->element_priority) <= 0)
     {
         current = current->next;
     }
@@ -295,7 +300,7 @@ PriorityQueueResult pqRemoveElement(PriorityQueue queue, PQElement element)
     {
         return PQ_NULL_ARGUMENT;
     }
-    queue->iteratorCurrentPosition = NULL;
+    queue->iterator_current_position = NULL;
     Node first = queue->list;
     
     if(!first)
@@ -335,7 +340,7 @@ static bool nodeCheck(PriorityQueue queue,Node a, PQElement e, PQElementPriority
     {
         return false;
     }
-    bool prioritySame = queue->comparePrioritiesFunction(a->elementPriority, p) == 0;
+    bool prioritySame = queue->comparePrioritiesFunction(a->element_priority, p) == 0;
     bool elementSame = queue->isEqualElementFunction(a->element, e);
     return prioritySame && elementSame;
 }
@@ -347,7 +352,7 @@ PriorityQueueResult pqChangePriority(PriorityQueue queue, PQElement element,
     {
         return PQ_NULL_ARGUMENT;
     }
-    queue->iteratorCurrentPosition = NULL;
+    queue->iterator_current_position = NULL;
 
     Node first = queue->list;
     if(!first)
@@ -357,17 +362,17 @@ PriorityQueueResult pqChangePriority(PriorityQueue queue, PQElement element,
     if(nodeCheck(queue, first, element, old_priority))
         {   
             queue->list = first->next;
-            PriorityQueueResult ret = pqInsert(queue, element, new_priority);
-            if(ret != PQ_SUCCESS)
+            PriorityQueueResult pq_result = pqInsert(queue, element, new_priority);
+            if(pq_result != PQ_SUCCESS)
             {
                 queue->list = first;//reversing changes
-                return ret;
+                return pq_result;
             }
             else
             {
                 destroyNode(queue, first);
                 queue->size--;
-                return ret;
+                return pq_result;
             }
         }
     Node current = queue->list;
@@ -378,17 +383,17 @@ PriorityQueueResult pqChangePriority(PriorityQueue queue, PQElement element,
         if(nodeCheck(queue, next, element, old_priority))
         {
             current->next = next->next;	
-            PriorityQueueResult ret = pqInsert(queue, element, new_priority);
-            if(ret != PQ_SUCCESS)
+            PriorityQueueResult pq_result = pqInsert(queue, element, new_priority);
+            if(pq_result != PQ_SUCCESS)
             {
                 current->next = next;//reversing changes
-                return ret;
+                return pq_result;
             }
             else
             {
                 destroyNode(queue, next);
                 queue->size--;
-                return ret;
+                return pq_result;
             }
         }
         current = next; 
@@ -403,7 +408,7 @@ PriorityQueueResult pqRemove(PriorityQueue queue)
     {
         return PQ_NULL_ARGUMENT;
     }
-    queue->iteratorCurrentPosition = NULL;
+    queue->iterator_current_position = NULL;
     if(queue->list == NULL)
     {
         assert(queue->size == 0);
@@ -411,9 +416,9 @@ PriorityQueueResult pqRemove(PriorityQueue queue)
     }
     Node tmp = queue->list;
     queue->list = queue->list->next;
-    if(queue->iteratorCurrentPosition == tmp)
+    if(queue->iterator_current_position == tmp)
     {
-        queue->iteratorCurrentPosition = NULL;
+        queue->iterator_current_position = NULL;
     }
     destroyNode(queue, tmp);
     queue->size--;
@@ -426,8 +431,8 @@ PQElement pqGetFirst(PriorityQueue queue)
     {
         return NULL;
     }
-    queue->iteratorCurrentPosition = queue->list;
-    return queue->iteratorCurrentPosition->element;
+    queue->iterator_current_position = queue->list;
+    return queue->iterator_current_position->element;
 }
 
 PQElement pqGetNext(PriorityQueue queue)
@@ -436,15 +441,15 @@ PQElement pqGetNext(PriorityQueue queue)
     {
         return NULL;
     }
-    if(queue->iteratorCurrentPosition == NULL)
+    if(queue->iterator_current_position == NULL)
     {
         return NULL;
     }
-    queue->iteratorCurrentPosition = queue->iteratorCurrentPosition->next;
-    if(queue->iteratorCurrentPosition == NULL)
+    queue->iterator_current_position = queue->iterator_current_position->next;
+    if(queue->iterator_current_position == NULL)
     {
         return NULL;
     }
-    return queue->iteratorCurrentPosition->element;
+    return queue->iterator_current_position->element;
 }
 
