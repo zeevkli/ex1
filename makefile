@@ -1,5 +1,5 @@
 CC = gcc
-OBJS = date.o priority_queue.o event_manager.o
+OBJS = date.o event_manager.o
 EXEC1_MAIN = tests/event_manager_tests.o
 EXEC2_MAIN = tests/priority_queue_tests.o
 EXEC1 = event_manager
@@ -8,7 +8,7 @@ DEBUG_FLAG = -DNDEBUG
 COMP_FLAG = -std=c99 -Wall -Werror -pedantic-errors
 
 $(EXEC1) : $(OBJS) $(EXEC1_MAIN)
-	$(CC) $(DEBUG_FLAG) $(OBJS) $(EXEC1_MAIN) -o $@
+	$(CC) $(DEBUG_FLAG) $(OBJS) $(EXEC1_MAIN) -L. -lpriority_queue -o $@
 
 $(EXEC2) : priority_queue.o $(EXEC2_MAIN)
 	$(CC) $(DEBUG_FLAG) priority_queue.o $(EXEC2_MAIN) -o $@
