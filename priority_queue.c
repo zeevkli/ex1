@@ -13,7 +13,6 @@ struct PriorityQueue_t
 {
     int size;
     Node list;
-
     Node iterator_current_position;
 
     CopyPQElement copyElementFunction;

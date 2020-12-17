@@ -29,11 +29,11 @@
  */
 #define RUN_TEST(test, name)                  \
     do {                                 \
-      printf("Running %s ... ", name);   \
+      printf("+ Running <b>%s</b> ... ", name);   \
         if (test()) {                    \
             printf("[OK]\n");            \
         } else {                         \
-            printf("[Failed]\n");        \
+            printf("[Failed]\n\n <span>To see what the test does and why it failed, please check the link at the top of the page to the test file</span>");        \
         }                                \
     } while (0)
 
@@ -86,13 +86,15 @@ bool isFilePrintOutputCorrect(char *file_name, char *expected_output) {
     fread(buffer, sizeof(char), numbytes, infile);
     fclose(infile);
 
+    if(numbytes == 0 && strlen(expected_output) != 0) {
+		free(buffer);
+        return false;
+    }
 
 
     writeOutputToFile(file_name, expected_output);
-    if (strlen(expected_output) != numbytes) {
-        free(buffer);
-        return false;
-    }
+    printf("<br>&nbsp;&nbsp;&nbsp;&nbsp;> Printing output: <a href='/staging/{STAGING_ID}/%s'>%s</a> | Expected output: <a href='/staging/{STAGING_ID}/expected_%s'>expected_%s</a> (Might be correct)",
+           file_name, file_name, file_name, file_name);
     bool result = (strncmp(buffer, expected_output, numbytes) == 0);
     free(buffer);
     return result;
@@ -121,6 +123,7 @@ bool testEMCreateStandardTest() {
     destroyEventManager(em);
     return result;
 }
+
 bool testEMDestroyNullArgument() {
     destroyEventManager(NULL);
     return true;
@@ -451,7 +454,7 @@ bool testEMChangeEventDateReordersTheEvent() {
     ASSERT(emAddEventByDiff(em, "event2", 2, 2) == EM_SUCCESS);
     ASSERT(emAddEventByDiff(em, "event3", 3, 3) == EM_SUCCESS);
     ASSERT(emAddEventByDiff(em, "event4", 4, 4) == EM_SUCCESS);
-    ASSERT(strcmp(emGetNextEvent(em), "event1") == 0);
+
     date = dateCreate(1, 1, 2000);
     ASSERT(emChangeEventDate(em, 3, date) == EM_SUCCESS);
     ASSERT(strcmp(emGetNextEvent(em), "event3") == 0);
@@ -816,7 +819,7 @@ bool testEMPrintAllResponsibleMembersSimpleTests() {
     ASSERT(emAddEventByDiff(em, "event1", 1, 1) == EM_SUCCESS);
     ASSERT(emAddMemberToEvent(em, 1, 1) == EM_SUCCESS);
     emPrintAllResponsibleMembers(em, "simple_tests1.out.txt");
-    ASSERT(isFilePrintOutputCorrect("simple_tests1.out.txt", "member1,1"));
+    ASSERT(isFilePrintOutputCorrect("simple_tests1.out.txt", "member1,1\n"));
 
 
     ASSERT(emAddMember(em, "member2", 2) == EM_SUCCESS);
@@ -824,11 +827,11 @@ bool testEMPrintAllResponsibleMembersSimpleTests() {
     ASSERT(emAddMemberToEvent(em, 2, 2) == EM_SUCCESS);
     ASSERT(emAddMemberToEvent(em, 1, 2) == EM_SUCCESS);
     emPrintAllResponsibleMembers(em, "simple_tests2.out.txt");
-    ASSERT(isFilePrintOutputCorrect("simple_tests2.out.txt", "member1,2\nmember2,1"));
+    ASSERT(isFilePrintOutputCorrect("simple_tests2.out.txt", "member1,2\nmember2,1\n"));
 
     ASSERT(emAddMemberToEvent(em, 2, 1) == EM_SUCCESS);
     emPrintAllResponsibleMembers(em, "simple_tests3.out.txt");
-    ASSERT(isFilePrintOutputCorrect("simple_tests3.out.txt", "member1,2\nmember2,2"));
+    ASSERT(isFilePrintOutputCorrect("simple_tests3.out.txt", "member1,2\nmember2,2\n"));
 
 
     emTick(em, 5);
@@ -865,7 +868,7 @@ bool testEMPrintAllEventsBasicTests() {
 
     emPrintAllEvents(em, "basic_tests1.out.txt");
     ASSERT(isFilePrintOutputCorrect("basic_tests1.out.txt",
-                                    "event1,2.1.2000,member1,member2,member3\nevent4,2.1.2000\nevent2,3.1.2000,member1,member3\nevent3,3.1.2000,member1"));
+                                    "event1,2.1.2000,member1,member2,member3\nevent4,2.1.2000\nevent2,3.1.2000,member1,member3\nevent3,3.1.2000,member1\n"));
 
     destroy:
     dateDestroy(date);
@@ -948,20 +951,20 @@ bool testBigEventManager_CreatorYanTomsinsky() {
 
     emPrintAllEvents(em, "yan_file1.out.txt");
     isFilePrintOutputCorrect("yan_file1.out.txt",
-                             "event1,1.12.2020,yan1,yan5\nevent4,4.12.2020,yan1,yan5\nevent2,5.12.2020,yan1,yan2,yan3,yan4,yan5\n event3,10.12.2020,yan1,yan2");
+                             "event1,1.12.2020,yan1,yan5\nevent4,4.12.2020,yan1,yan5\nevent2,5.12.2020,yan1,yan2,yan3,yan4,yan5\n event3,10.12.2020,yan1,yan2\n");
 
     emPrintAllResponsibleMembers(em, "yan_file2.out.txt");
-    isFilePrintOutputCorrect("yan_file2.out.txt", "yan1,4\nyan5,3\nyan2,2\nyan3,1\nyan4,1");
+    isFilePrintOutputCorrect("yan_file2.out.txt", "yan1,4\nyan5,3\nyan2,2\nyan3,1\nyan4,1\n");
 
     ASSERT_TEST(emTick(em, 4) == EM_SUCCESS, destroyDates2);
     ASSERT_TEST(emGetEventsAmount(em) == 2, destroyDates2);
 
     emPrintAllEvents(em, "yan_file3.out.txt");
     isFilePrintOutputCorrect("yan_file3.out.txt",
-                             "event2,5.12.2020,yan1,yan2,yan3,yan4,yan5\nevent3,10.12.2020,yan1,yan2");
+                             "event2,5.12.2020,yan1,yan2,yan3,yan4,yan5\nevent3,10.12.2020,yan1,yan2\n");
 
     emPrintAllResponsibleMembers(em, "yan_file4.out.txt");
-    isFilePrintOutputCorrect("yan_file4.out.txt", "yan1,2\nyan2,2\nyan3,1\nyan4,1\nyan5,1");
+    isFilePrintOutputCorrect("yan_file4.out.txt", "yan1,2\nyan2,2\nyan3,1\nyan4,1\nyan5,1\n");
 
     ASSERT_TEST(emTick(em, 2) == EM_SUCCESS, destroyDates2);
     ASSERT_TEST(emGetEventsAmount(em) == 1, destroyDates2);
@@ -1088,15 +1091,268 @@ bool testRemoveEventsAndMembers_CreatorAdar() {
     ASSERT_TEST(emAddMemberToEvent(em, 119, 48) == EM_SUCCESS, destroyRemoveEventsAndMembers); //nesi to another (2)
     emPrintAllEvents(em, "eventsprinted.out.txt");
     ASSERT_TEST(isFilePrintOutputCorrect("eventsprinted.out.txt",
-                             "holiday,20.9.2019\nchristmess,21.9.2019,andrey,nesi\nanother,21.9.2019,nesi\npassover,21.9.2019,eric,andrey,alex,nesi\nanother,22.9.2019,nesi"), destroyRemoveEventsAndMembers);
+                                         "holiday,20.9.2019\nchristmess,21.9.2019,andrey,nesi\nanother,21.9.2019,nesi\npassover,21.9.2019,eric,andrey,alex,nesi\nanother,22.9.2019,nesi\n"),
+                destroyRemoveEventsAndMembers);
     emPrintAllResponsibleMembers(em, "membersprinted.out.txt");
-    ASSERT_TEST(isFilePrintOutputCorrect("membersprinted.out.txt", "nesi,4\nandrey,2\neric,1\nalex,1"), destroyRemoveEventsAndMembers);
+    ASSERT_TEST(isFilePrintOutputCorrect("membersprinted.out.txt", "nesi,4\nandrey,2\neric,1\nalex,1\n"),
+                destroyRemoveEventsAndMembers);
 
     destroyRemoveEventsAndMembers:
     dateDestroy(start_date);
     dateDestroy(date1);
     dateDestroy(date2);
     dateDestroy(date3);
+    destroyEventManager(em);
+    return result;
+}
+
+/* ========== TESTING testEMPrintAllEventsMembersTests ========== */
+/*
+bool testEMPrintAllEventsMembersTests_CreatorLiranLavi() {
+    bool result = true;
+    Date date = NULL;
+    EventManager em = createEM(1, 12, 1999);
+    date = dateCreate(1, 12, 1999);
+
+    char event_name[80] = "event_hanuka";
+    for (int i = 0; i < 50; i++) {
+        ASSERT_TEST(emAddMember(em, "liran", i) == EM_SUCCESS, destroy);
+    }
+
+    char expected_events[20000] = "";
+    char expected_members[20000] = "";
+    char str[20] = "";
+    for (int i = 0; i < 50; i++) {
+        //sprintf(event_name, "event%d", i);
+        ASSERT_TEST(emAddEventByDiff(em, event_name, i, i) == EM_SUCCESS, destroy);
+        if (i != 0) {
+            dateTick(date);
+
+        }
+        int year = 0, month = 0, day = 0;
+        dateGet(date, &day, &month, &year);
+        if (i != 0) {
+            strcat(expected_events, "\n");
+            strcat(expected_members, "\n");
+        }
+        sprintf(str, "event_hanuka,%d.%d.%d", day, month, year);
+        strcat(expected_events, str);
+        for (int j = 0; j < 50; j++) {
+            ASSERT_TEST(emAddMemberToEvent(em, j, i) == EM_SUCCESS, destroy);
+            strcat(expected_events, ",liran");
+        }
+        strcat(expected_members, "liran,50");
+
+
+    }
+    strcat(expected_events, "\n");
+    strcat(expected_members, "\n");
+
+    emPrintAllEvents(em, "liran_events.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("liran_events.out.txt", expected_events), destroy);
+    emPrintAllResponsibleMembers(em, "liran_members.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("liran_members.out.txt", expected_members), destroy);
+
+    destroy:
+    dateDestroy(date);
+    destroyEventManager(em);
+    return result;
+}
+*/
+
+bool checkNegativeDate_CreatorAdam() {
+    bool result = true;
+    Date startDate = dateCreate(1, 1, -100);
+    Date date1 = dateCreate(2, 1, -100);
+    Date date2 = dateCreate(30, 12, -101);
+    Date date3 = dateCreate(1, 1, 0);
+    EventManager em = createEventManager(startDate);
+    ASSERT_TEST(emAddEventByDate(em, "event1", date1, 0) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddEventByDate(em, "event2", date2, 1) == EM_INVALID_DATE, destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddEventByDate(em, "event3", date3, 2) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMember(em, "member1", 0) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMember(em, "member2", 1) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMemberToEvent(em, 0, 0) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMemberToEvent(em, 1, 2) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMemberToEvent(em, 0, 2) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    emPrintAllResponsibleMembers(em, "negative_date_test_members.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("negative_date_test_members.out.txt", "member1,2\nmember2,1\n"),
+                destroyRemoveEventsAndMembers);
+    emPrintAllEvents(em, "negative_date_test_events.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("negative_date_test_events.out.txt",
+                                         "event1,2.1.-100,member1\nevent3,1.1.0,member1,member2\n"),
+                destroyRemoveEventsAndMembers);
+
+    destroyRemoveEventsAndMembers:
+    dateDestroy(startDate);
+    dateDestroy(date1);
+    dateDestroy(date2);
+    dateDestroy(date3);
+    destroyEventManager(em);
+    return result;
+}
+
+bool testNegativeYearTwo_CreatorAdam() {
+    bool result = true;
+    Date startDate = dateCreate(1, 1, -100);
+    EventManager em = createEventManager(startDate);
+    Date date = NULL;
+    for (int i = 0; i < 10; i++) {
+        ASSERT_TEST(emAddEventByDiff(em, "event", i, i) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+        ASSERT_TEST(emAddMember(em, "member", i) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+        ASSERT_TEST(emAddMemberToEvent(em, i, i) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    }
+    emPrintAllEvents(em, "expectedAllEvents1.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("expectedAllEvents1.out.txt", "event,1.1.-100,member\n"
+                                                                       "event,2.1.-100,member\n"
+                                                                       "event,3.1.-100,member\n"
+                                                                       "event,4.1.-100,member\n"
+                                                                       "event,5.1.-100,member\n"
+                                                                       "event,6.1.-100,member\n"
+                                                                       "event,7.1.-100,member\n"
+                                                                       "event,8.1.-100,member\n"
+                                                                       "event,9.1.-100,member\n"
+                                                                       "event,10.1.-100,member\n"),
+                destroyRemoveEventsAndMembers);
+    emTick(em, 4);
+    emPrintAllResponsibleMembers(em, "expectedAllMembers2.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("expectedAllMembers2.out.txt", "member,1\n"
+                                                                        "member,1\n"
+                                                                        "member,1\n"
+                                                                        "member,1\n"
+                                                                        "member,1\n"
+                                                                        "member,1\n"), destroyRemoveEventsAndMembers);
+
+    ASSERT_TEST(emRemoveMemberFromEvent(em, 4, 3) == EM_EVENT_ID_NOT_EXISTS, destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emRemoveMemberFromEvent(em, 4, 4) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emRemoveMemberFromEvent(em, 4, 5) == EM_EVENT_AND_MEMBER_NOT_LINKED, destroyRemoveEventsAndMembers);
+    emPrintAllEvents(em, "expectedAllEvents3.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("expectedAllEvents3.out.txt", "event,5.1.-100\n"
+                                                                       "event,6.1.-100,member\n"
+                                                                       "event,7.1.-100,member\n"
+                                                                       "event,8.1.-100,member\n"
+                                                                       "event,9.1.-100,member\n"
+                                                                       "event,10.1.-100,member\n"),
+                destroyRemoveEventsAndMembers);
+    date = dateCreate(11, 1, -100);
+    ASSERT_TEST(emChangeEventDate(em, 4, date) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    emPrintAllEvents(em, "expectedAllEvents4.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("expectedAllEvents4.out.txt", "event,6.1.-100,member\n"
+                                                                       "event,7.1.-100,member\n"
+                                                                       "event,8.1.-100,member\n"
+                                                                       "event,9.1.-100,member\n"
+                                                                       "event,10.1.-100,member\n"
+                                                                       "event,11.1.-100\n"),
+                destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMember(em, "adam", 0) == EM_MEMBER_ID_ALREADY_EXISTS, destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMember(em, "adam", 10) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMemberToEvent(em, 10, 4) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMemberToEvent(em, 10, 5) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMemberToEvent(em, 10, 6) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMemberToEvent(em, 10, 7) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    emPrintAllEvents(em, "expectedNewEvents5.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("expectedNewEvents5.out.txt", "event,6.1.-100,member,adam\n"
+                                                                       "event,7.1.-100,member,adam\n"
+                                                                       "event,8.1.-100,member,adam\n"
+                                                                       "event,9.1.-100,member\n"
+                                                                       "event,10.1.-100,member\n"
+                                                                       "event,11.1.-100,adam\n"),
+                destroyRemoveEventsAndMembers);
+    emPrintAllResponsibleMembers(em, "expectedNewMembers6.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("expectedNewMembers6.out.txt", "adam,4\n"
+                                                                        "member,1\n"
+                                                                        "member,1\n"
+                                                                        "member,1\n"
+                                                                        "member,1\n"
+                                                                        "member,1\n"), destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emRemoveEvent(em, 7) == EM_SUCCESS, destroyRemoveEventsAndMembers);
+    emPrintAllResponsibleMembers(em, "expectedNewMembersAfterRemove7.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("expectedNewMembersAfterRemove7.out.txt", "adam,3\n"
+                                                                                   "member,1\n"
+                                                                                   "member,1\n"
+                                                                                   "member,1\n"
+                                                                                   "member,1\n"),
+                destroyRemoveEventsAndMembers);
+    emPrintAllEvents(em, "expectedNewEventsAfterRemove8.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("expectedNewEventsAfterRemove8.out.txt", "event,6.1.-100,member,adam\n"
+                                                                                  "event,7.1.-100,member,adam\n"
+                                                                                  "event,9.1.-100,member\n"
+                                                                                  "event,10.1.-100,member\n"
+                                                                                  "event,11.1.-100,adam\n"),
+                destroyRemoveEventsAndMembers);
+
+
+    destroyRemoveEventsAndMembers:
+    dateDestroy(date);
+    dateDestroy(startDate);
+    destroyEventManager(em);
+    return result;
+}
+bool testTickRemovePrintAndReturnVals_CreatorAdam() {
+    bool result = true;
+    Date startDate=dateCreate(27,1,2021);
+    EventManager em=createEventManager(startDate);
+    Date dateNew = NULL;
+
+    ASSERT_TEST(emAddEventByDiff(em, "merokavot",3, 0)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddEventByDiff(em, "mada7",18, 1)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddEventByDiff(em, "Matam (damn)",22, 2)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddEventByDiff(em, "Matam (damn)",22, 3)==EM_EVENT_ALREADY_EXISTS,destroyRemoveEventsAndMembers);//SAME NAME SAME DAY
+    ASSERT_TEST(emAddEventByDiff(em, "M3galim",31, 3)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+    ASSERT_TEST(strcmp(emGetNextEvent(em),"merokavot")==0,destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMember(em, "adam1", 1)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMember(em, "adam2", 2)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMember(em, "adam3", 3)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddMember(em, "adam4", 4)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+    for(int i=0; i<4 ;i++){
+        for(int j=1;j<=4 ;j++){
+            ASSERT_TEST(emAddMemberToEvent(em, j, i)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+        }
+    }
+    emPrintAllEvents(em, "test_monotonious_memberId.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("test_monotonious_memberId.out.txt",
+                                         "merokavot,30.1.2021,adam1,adam2,adam3,adam4\n"
+                                         "mada7,15.2.2021,adam1,adam2,adam3,adam4\n"
+                                         "Matam (damn),19.2.2021,adam1,adam2,adam3,adam4\n"
+                                         "M3galim,28.2.2021,adam1,adam2,adam3,adam4\n"),destroyRemoveEventsAndMembers);
+
+    emPrintAllResponsibleMembers(em,"test_same_number_of_events_with_id.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("test_same_number_of_events_with_id.out.txt",
+                                         "adam1,4\n"
+                                         "adam2,4\n"
+                                         "adam3,4\n"
+                                         "adam4,4\n"),destroyRemoveEventsAndMembers);
+
+    ASSERT_TEST(emTick(em, 4)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emGetEventsAmount(em)==3,destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddEventByDiff(em, "Matam (damn)",27, 4)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+    dateNew=dateCreate(28,2,2021);
+    ASSERT_TEST(emChangeEventDate(em, 4,dateNew)==EM_EVENT_ALREADY_EXISTS,destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emRemoveEvent(em, 4)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+
+    ASSERT_TEST(emChangeEventDate(em, 2,dateNew)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+    emPrintAllResponsibleMembers(em, "members_after_changing_date.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("members_after_changing_date.out.txt",
+                                         "adam1,3\n"
+                                         "adam2,3\n"
+                                         "adam3,3\n"
+                                         "adam4,3\n"),destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emRemoveMemberFromEvent(em, 3, 1)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+    emPrintAllEvents(em, "test_2.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("test_2.out.txt",
+                                         "mada7,15.2.2021,adam1,adam2,adam4\n"
+                                         "M3galim,28.2.2021,adam1,adam2,adam3,adam4\n"
+                                         "Matam (damn),28.2.2021,adam1,adam2,adam3,adam4\n"),destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emAddEventByDiff(em, "Matam (damn)",24, 4)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+    ASSERT_TEST(emTick(em, 25)==EM_SUCCESS,destroyRemoveEventsAndMembers);
+    emPrintAllEvents(em, "test_3_memberId.out.txt");
+    ASSERT_TEST(isFilePrintOutputCorrect("test_3_memberId.out.txt",
+                                         "M3galim,28.2.2021,adam1,adam2,adam3,adam4\n"
+                                         "Matam (damn),28.2.2021,adam1,adam2,adam3,adam4\n"),destroyRemoveEventsAndMembers);
+
+    destroyRemoveEventsAndMembers:
+    dateDestroy(startDate);
+    dateDestroy(dateNew);
     destroyEventManager(em);
     return result;
 }
@@ -1135,7 +1391,11 @@ bool testRemoveEventsAndMembers_CreatorAdar() {
     X(testEMPrintAllEventsBasicTests) \
     X(testBigEventManager_CreatorYanTomsinsky) \
     X(testChangeDate_CreatorAdar) \
-    X(testRemoveEventsAndMembers_CreatorAdar)
+    X(testRemoveEventsAndMembers_CreatorAdar) \
+    X(checkNegativeDate_CreatorAdam) \
+    X(testNegativeYearTwo_CreatorAdam) \
+    X(testTickRemovePrintAndReturnVals_CreatorAdam)
+
 
 bool (*tests[])(void) = {
 #define X(test_name) test_name,
@@ -1149,7 +1409,7 @@ const char *testNames[] = {
 #undef X
 };
 
-#define NUMBER_TESTS 34
+#define NUMBER_TESTS 37
 
 int main(int argc, char **argv) {
     if (argc == 1) {
@@ -1162,11 +1422,15 @@ int main(int argc, char **argv) {
         fprintf(stdout, "Usage: priority_queue_tests <test index>\n");
         return 0;
     }
+
     int test_idx = strtol(argv[1], NULL, 10);
     if (test_idx < 1 || test_idx > NUMBER_TESTS) {
         fprintf(stderr, "Invalid test index %d\n", test_idx);
         return 0;
     }
+
     RUN_TEST(tests[test_idx - 1], testNames[test_idx - 1]);
     return 0;
+
 }
+

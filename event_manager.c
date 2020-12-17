@@ -381,15 +381,14 @@ EventManagerResult emAddMember(EventManager em, char* member_name, int member_id
 
 static EventManagerResult emMemberChangePriority(EventManager em, int member_id, memberEnum add_or_remove)
 {
-	Member memberTmp = NULL; //Shay, maybe you have an ides for another name to this variable?
-	emFindMember(em, member_id, &memberTmp);//member should exist 
-    Member member = (Member) memberCopy(memberTmp);
+	Member member_to_destroy = NULL;
+	emFindMember(em, member_id, &member_to_destroy);//member should exist 
+    Member member = (Member) memberCopy(member_to_destroy);
 	if(!member)
 	{
 		return EM_OUT_OF_MEMORY;
 	}
-    PriorityQueueResult result = pqRemoveElement(em->members, memberTmp);//delete the member in PQ  
-	memberTmp = NULL; //before this line points to garbage SHAY - why is this neccesary?
+    PriorityQueueResult result = pqRemoveElement(em->members, member_to_destroy);//delete the member in PQ
     assert(result == PQ_SUCCESS);
 	assert(member->id == member_id);
     int new_number;
