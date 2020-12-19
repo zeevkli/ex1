@@ -30,6 +30,7 @@ static Node copyList(PriorityQueue queue);
 static void destroyList(PriorityQueue queue, Node node);
 static bool isNodeEqual(PriorityQueue queue, Node a, PQElement e, PQElementPriority p);
 
+//allocates a node that contains an element and a priority
 static Node createNode(PQElement element, PQElementPriority element_priority)
 {
     Node node = malloc(sizeof(*node));
@@ -43,6 +44,7 @@ static Node createNode(PQElement element, PQElementPriority element_priority)
     return node;
 }
 
+//frees given node using functions given by user
 static void destroyNode(PriorityQueue queue, Node node)
 {
     node->next = NULL;
@@ -51,6 +53,7 @@ static void destroyNode(PriorityQueue queue, Node node)
     free(node);
 }
 
+//copies given node using functions given by user
 static Node copyNode(PriorityQueue queue, Node old)
 {
     Node new_node = malloc(sizeof(*new_node));
@@ -129,6 +132,7 @@ PriorityQueue pqCreate(CopyPQElement copy_element,
     return queue;
 }
 
+//frees the whole node tree
 static void destroyList(PriorityQueue queue, Node node)
 {
     Node current = node;
@@ -318,6 +322,7 @@ PriorityQueueResult pqRemoveElement(PriorityQueue queue, PQElement element)
     return PQ_ELEMENT_DOES_NOT_EXISTS; 
 }
 
+//compares two nodes
 static bool isNodeEqual(PriorityQueue queue, Node a, PQElement e, PQElementPriority p)
 {
     if(!a || !p || !e || !queue)
