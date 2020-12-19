@@ -7,6 +7,7 @@
 #include "date.h"
 #include "priority_queue.h"
 
+//Enum for indicating if we want to remove or add an event to a member in em
 typedef enum {MEMBER_ADD_EVENT, MEMBER_REMOVE_EVENT} memberEnum;
 typedef struct Member_t
 {
@@ -30,35 +31,86 @@ struct EventManager_t
 	PriorityQueue members;
 };
 
+//Copy an int t a new memory
 static PQElementPriority copyIdGeneric(PQElementPriority n);
+
+//Free int's memory
 static void freeIdGeneric(PQElementPriority n);
+
+//Compare 2 ints
 static int compareIdsGeneric(PQElementPriority n1, PQElementPriority n2);
 
+
+//Bool indicating if two memers are equal (Chekck by id)
 static bool membersEqual(PQElement member1, PQElement member2);
+
+//Copy a member's memory toa new member
 static PQElement memberCopy(PQElement member);
+
+//Create a new member with given id and name
 static Member memberCreate(int id, char *name);
+
+//Free member's memory
 static void memberFree(PQElement member);
 
+
+//Create an event with given date id and name
 static Event eventCreate(Date date, int id, char* name);
-static Event eventCreateNoEmptyPQ(Date date, int id, char* name);
+
+//Create an event with given date, id, name and make it's member pq point to null
+static Event eventCreateNullPQ(Date date, int id, char* name);
+
+//Create an event only with the diven id.
 static Event createBlankEvent(int id);
+
+//Copy an event
 static PQElement eventCopy(PQElement event);
+
+//Free event's memory
 static void eventDestroy(PQElement event);
+
+//Returns a boolean indicating if two events are equal
 static bool eventsEqual(PQElement event1, PQElement event2);
 
-static bool eventNameAndDateinPQ(EventManager em, Event event);
-static bool nameAndDateinPQEvent(EventManager em, char *name, Date date);
-static EventManagerResult eventAdd(EventManager em, Event event, Date date);
+
+//Checks if the given event's name and date are in em
+static bool eventNameAndDateinEM(EventManager em, Event event);
+
+//Checks if em has an event with the given name and date
+static bool nameAndDateinEMEvent(EventManager em, char *name, Date date);
+
+//Add the event with the given date as the priority to em
+static EventManagerResult emEventAdd(EventManager em, Event event, Date date);
+
+//Find an event with given id in em. If the event is found PQ_SUCCESS is returned and the Event pointed to by event_p is
+//the event found
 static EventManagerResult emFindEvent(EventManager em, int id, Event *event_p);
+
+//Find a member with given id in em. If the member is found PQ_SUCCESS is returned and the Member pointed to by member_p is
+//the member found
 static EventManagerResult emFindMember(EventManager em, int id, Member *member_p);
+
+//Removes all members currently linked to an event from the event
 static EventManagerResult emRemoveAllMembersFromEvent(EventManager em, Event event);
 
+//Change the amount of the events linked to a member with member_id in em.
+//The enum indicates if we want to add or remove an event to the member
 static EventManagerResult emMemberChangePriority(EventManager em, int member_id, memberEnum add_or_remove);
+
+//Compare members priority.
 static int compareMemberPriority(PQElement memberA, PQElement memberB);
 
+
+//Static function for printing the event's stats to the stream file
 static void emPrintEvent(Event event, FILE* stream);
+
+//Static function for printing the date's stats to the stream file
 static void printDate(Date date, FILE* stream);
+
+//Static function for printing the pq of members linked to an event
 static void printEventMemberPq(PriorityQueue members, FILE* stream);
+
+//Compare dates backwards
 static int dateCompareEarliestFirst(Date date1, Date date2);
 
 static int dateCompareEarliestFirst(Date date1, Date date2)
@@ -125,7 +177,7 @@ static Event eventCreate(Date date, int id, char* name)
 	return event;
 }
 
-static Event eventCreateNoEmptyPQ(Date date, int id, char* name)
+static Event eventCreateNullPQ(Date date, int id, char* name)
 {
 	if(!name)
 	{
@@ -178,7 +230,7 @@ static PQElement eventCopy(PQElement event)
 	}
 	Event new_event = (Event) event;
     
-	Event event_copy = eventCreateNoEmptyPQ(new_event->date, new_event->id, new_event->name);
+	Event event_copy = eventCreateNullPQ(new_event->date, new_event->id, new_event->name);
 	if(!event_copy)
 	{
 		return NULL;
@@ -521,7 +573,7 @@ EventManagerResult emRemoveMemberFromEvent(EventManager em, int member_id, int e
 	return EM_SUCCESS;
 }
 
-static bool eventNameAndDateinPQ(EventManager em, Event event)
+static bool eventNameAndDateinEM(EventManager em, Event event)
 {
     PQ_FOREACH(Event, iterator_event, em->events)
     {
@@ -533,7 +585,7 @@ static bool eventNameAndDateinPQ(EventManager em, Event event)
     return false;
 }
 //like above but uses external date 
-static bool nameAndDateinPQEvent(EventManager em, char *name, Date date)
+static bool nameAndDateinEMEvent(EventManager em, char *name, Date date)
 {
     PQ_FOREACH(Event, iterator_event, em->events)
     {
@@ -544,9 +596,9 @@ static bool nameAndDateinPQEvent(EventManager em, char *name, Date date)
     }
     return false;
 }
-static EventManagerResult eventAdd(EventManager em, Event event, Date date)
+static EventManagerResult emEventAdd(EventManager em, Event event, Date date)
 {
-    if(eventNameAndDateinPQ(em, event))
+    if(eventNameAndDateinEM(em, event))
     {
         return EM_EVENT_ALREADY_EXISTS;
     }
@@ -591,7 +643,7 @@ EventManagerResult emAddEventByDate(EventManager em, char* event_name, Date date
         return EM_OUT_OF_MEMORY;
     }
 
-    EventManagerResult em_result = eventAdd(em, event, date); 
+    EventManagerResult em_result = emEventAdd(em, event, date); 
     eventDestroy(event);
     return em_result;
 }
@@ -629,7 +681,7 @@ EventManagerResult emAddEventByDiff(EventManager em, char* event_name, int days,
         return EM_OUT_OF_MEMORY;
     }
     
-    EventManagerResult em_result = eventAdd(em, event, new_date);
+    EventManagerResult em_result = emEventAdd(em, event, new_date);
     dateDestroy(new_date);
     eventDestroy(event);
     return em_result;
@@ -772,7 +824,7 @@ EventManagerResult emChangeEventDate(EventManager em, int event_id, Date new_dat
         return em_result;
     }
     assert(em_result == EM_SUCCESS || em_result == EM_EVENT_ID_NOT_EXISTS || em_result == EM_OUT_OF_MEMORY);
-    if(nameAndDateinPQEvent(em, event_to_change->name, new_date))
+    if(nameAndDateinEMEvent(em, event_to_change->name, new_date))
     {
         return EM_EVENT_ALREADY_EXISTS;
     }
@@ -882,8 +934,6 @@ void emPrintAllResponsibleMembers(EventManager em, const char* file_name)
 
 void emPrintAllEvents(EventManager em, const char* file_name)
 {
-    int event_counter = 0;
-    int event_pq_size = pqGetSize(em->events);
     FILE* stream = fopen(file_name, "w");
     if(!stream)
     {
@@ -891,12 +941,7 @@ void emPrintAllEvents(EventManager em, const char* file_name)
     }
     PQ_FOREACH(Event, iterator_event, em->events)
     {
-        event_counter++;
         emPrintEvent(iterator_event, stream);
-        if(event_counter != event_pq_size)
-        {
-            fprintf(stream, "\n");
-        }
     }
     fclose(stream);
 }
@@ -906,6 +951,7 @@ static void emPrintEvent(Event event, FILE* stream)
     fprintf(stream, "%s,", event->name);
     printDate(event->date, stream);
     printEventMemberPq(event->member_pq, stream);
+    fprintf(stream, "\n");
 }
 
 static void printDate(Date date, FILE* stream)

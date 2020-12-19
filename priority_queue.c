@@ -28,6 +28,7 @@ static void destroyNode(PriorityQueue queue, Node node);
 static Node copyNode(PriorityQueue queue, Node old);
 static Node copyList(PriorityQueue queue);
 static void destroyList(PriorityQueue queue, Node node);
+static bool isNodeEqual(PriorityQueue queue, Node a, PQElement e, PQElementPriority p);
 
 static Node createNode(PQElement element, PQElementPriority element_priority)
 {
@@ -317,7 +318,7 @@ PriorityQueueResult pqRemoveElement(PriorityQueue queue, PQElement element)
     return PQ_ELEMENT_DOES_NOT_EXISTS; 
 }
 
-static bool nodeCheck(PriorityQueue queue,Node a, PQElement e, PQElementPriority p)
+static bool isNodeEqual(PriorityQueue queue, Node a, PQElement e, PQElementPriority p)
 {
     if(!a || !p || !e || !queue)
     {
@@ -343,7 +344,7 @@ PriorityQueueResult pqChangePriority(PriorityQueue     queue,
     {
         return PQ_ELEMENT_DOES_NOT_EXISTS;
     }
-    if(nodeCheck(queue, first, element, old_priority))
+    if(isNodeEqual(queue, first, element, old_priority))
 	{   
 		queue->list = first->next;
 		PriorityQueueResult pq_result = pqInsert(queue, element, new_priority);
@@ -363,7 +364,7 @@ PriorityQueueResult pqChangePriority(PriorityQueue     queue,
     Node next = current->next;	
     while (next)
     {
-        if(nodeCheck(queue, next, element, old_priority))
+        if(isNodeEqual(queue, next, element, old_priority))
         {
             current->next = next->next;	
             PriorityQueueResult pq_result = pqInsert(queue, element, new_priority);
@@ -395,14 +396,10 @@ PriorityQueueResult pqRemove(PriorityQueue queue)
     if(queue->list == NULL)
     {
         assert(queue->size == 0);
-        return PQ_SUCCESS;//!!!!! what should we return if the queue is empty? 
+        return PQ_SUCCESS;
     }
     Node tmp = queue->list;
     queue->list = queue->list->next;
-    if(queue->iterator_current_position == tmp)
-    {
-        queue->iterator_current_position = NULL;
-    }
     destroyNode(queue, tmp);
     queue->size--;
     return PQ_SUCCESS;

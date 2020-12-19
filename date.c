@@ -5,6 +5,7 @@
 #define DAYS_IN_MONTH 30
 #define MONTHS_IN_YEAR 12
 
+//Returns boolean value indicating if the date params are valid
 static bool isDateValid(int day, int month, int year);
 
 struct Date_t
