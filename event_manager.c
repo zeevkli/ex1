@@ -909,8 +909,6 @@ char* emGetNextEvent(EventManager em)
 
 void emPrintAllResponsibleMembers(EventManager em, const char* file_name)
 {
-    int member_counter = 0;
-    int member_pq_size = pqGetSize(em->members);
     FILE* stream = fopen(file_name, "w");
     if(!stream)
     {
@@ -918,14 +916,9 @@ void emPrintAllResponsibleMembers(EventManager em, const char* file_name)
     }
     PQ_FOREACH(Member, iterator, em->members)
     {
-        member_counter++;
         if(iterator->events_number > 0)
         {
-            fprintf(stream, "%s,%d", iterator->name, iterator->events_number);
-            if(member_counter != member_pq_size)
-            {
-                fprintf(stream, "\n");
-            }
+            fprintf(stream, "%s,%d\n", iterator->name, iterator->events_number);
         }
         
     }
